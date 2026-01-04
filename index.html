@@ -1,0 +1,4139 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- jsPDF & html2canvas CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3호선 전력관제 장애 관리 통합 플랫폼</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .navbar {
+            background-color: #8494a4 !important;
+        }
+
+        .navbar-brand {
+            color: #ffffff !important;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            transition: opacity 0.3s ease;
+            font-size: 1.75rem;
+            /* 글자 크기 조정 */
+        }
+
+        .navbar-brand:hover {
+            color: #ffffff !important;
+            text-decoration: none;
+            opacity: 0.8;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            width: auto;
+            margin-right: 15px;
+            border-radius: 4px;
+        }
+
+        .container-fluid {
+            padding-top: 20px;
+        }
+
+        .card {
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background-color: #e9ecef;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: bold;
+        }
+
+        .table-responsive {
+            margin-top: 20px;
+        }
+
+        .table th,
+        .table td {
+            vertical-align: middle;
+        }
+
+        .badge-risk-high {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .badge-risk-medium {
+            background-color: #ffc107;
+            color: #343a40;
+        }
+
+        .badge-risk-low {
+            background-color: #28a745;
+            color: white;
+        }
+
+        @keyframes blink {
+
+            0%,
+            50% {
+                opacity: 1;
+            }
+
+            51%,
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        .loading-dots {
+            animation: blink 1.5s infinite;
+        }
+
+        .loading-full {
+            animation: blink 1.5s infinite;
+            text-align: center !important;
+        }
+
+        .floating-chat-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .floating-chat-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .chat-window {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 350px;
+            height: 450px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+            display: none;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-body {
+            flex-grow: 1;
+            padding: 10px;
+            overflow-y: auto;
+            background-color: #e9ecef;
+        }
+
+        .chat-input-area {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .chat-input-area input {
+            flex-grow: 1;
+            border-radius: 20px;
+            padding: 8px 15px;
+            border: 1px solid #ced4da;
+        }
+
+        .chat-input-area button {
+            margin-left: 10px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #007bff;
+            color: white;
+            border: none;
+        }
+
+        .message-bubble {
+            padding: 8px 12px;
+            border-radius: 15px;
+            margin-bottom: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message-user {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .message-ai {
+            background-color: #ffffff;
+            align-self: flex-start;
+            margin-right: auto;
+        }
+
+        /* Modal Styles */
+        .modal-dialog {
+            max-width: 90%;
+        }
+
+        .modal-body {
+            min-height: 400px;
+        }
+
+        .nav-tabs .nav-link.active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .nav-tabs .nav-link {
+            color: #007bff;
+        }
+
+        @media print {
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+            }
+
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+
+            .chart-container {
+                text-align: center;
+                margin: 20px 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <a class="navbar-brand" href="/" onclick="location.reload(); return false;">
+            <img src="io.png" alt="Company Logo">
+            3호선 전력관제 장애 관리 통합 플랫폼
+        </a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item ml-2">
+                    <button class="btn my-2 my-sm-0" id="navChatbotBtn"
+                        style="font-weight: bold; font-size: 1.25rem; background-color: #6f42c1; border-color: #6f42c1; color: white;">사규챗봇</button>
+                </li>
+                <li class="nav-item d-flex align-items-center ml-2">
+                    <select id="predictionYearSelect" class="form-control mr-2" style="width: auto; font-size: 1rem;">
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                    <button class="btn btn-info my-2 my-sm-0" id="overallPredictionBtn"
+                        style="font-weight: bold; font-size: 1.25rem;">종합 예측 대시보드</button>
+                </li>
+                <li class="nav-item ml-2">
+                    <button class="btn btn-warning my-2 my-sm-0" id="trainingModeBtn"
+                        style="font-weight: bold; font-size: 1.25rem;">장애대응 훈련모드 실행</button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        장애 보고서 필터(장애명 선택시 AI분석 및 예측이 실행됩니다. 전체 장애 예측은 "종합 예측 대시보드"를 활용하세요.)
+                    </div>
+                    <div class="card-body">
+                        <form class="form-inline">
+
+                            <div class="form-group mx-sm-3 mb-2">
+                                <label for="faultTypeSelect" class="sr-only">장애 유형</label>
+                                <select class="form-control" id="faultTypeSelect">
+                                    <option value="">모든 장애 유형</option>
+                                    <!-- Options will be loaded dynamically -->
+                                </select>
+                            </div>
+                            <!-- training button moved to navbar (after overallPredictionBtn) -->
+                        </form>
+                        <div class="card mt-3" id="aiBriefingCard" style="display:none;">
+                            <div class="card-header">
+                                <i class="fas fa-robot"></i> AI 분석 브리핑
+                            </div>
+                            <div class="card-body">
+                                <!-- 통계 요약 박스 -->
+                                <div class="row mb-3" id="briefingStats" style="display:none;">
+                                    <div class="col-md-3">
+                                        <div class="text-center p-2 rounded"
+                                            style="background-color: #007bff; color: white;">
+                                            <small class="text-white" style="font-size:2rem;">총 발생건수</small>
+                                            <h4 class="text-white mb-0" id="totalIncidents" style="font-size:2rem;">0
+                                            </h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center p-2 rounded"
+                                            style="background-color: #ffc107; color: #212529;">
+                                            <small style="color: #212529; font-size:2rem;">중요도</small>
+                                            <h4 class="mb-0" id="importanceLevel"
+                                                style="color: #212529; font-size:2rem;">-</h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center p-2 rounded"
+                                            style="background-color: #b3d9ff; color: #212529;">
+                                            <small style="color: #212529; font-size:2rem;">주요 원인</small>
+                                            <h4 class="mb-0" id="causesCount" style="color: #212529; font-size:2rem;">0
+                                            </h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center p-2 rounded"
+                                            style="background-color: #fd7e14; color: white;">
+                                            <small class="text-white" style="font-size:2rem;">조치방법</small>
+                                            <h4 class="text-white mb-0" id="actionsCount" style="font-size:2rem;">0</h4>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 브리핑 내용 -->
+                                <div id="aiSummaryText" class="briefing-content"
+                                    style="white-space: pre-line; font-size:3rem; font-weight: bold; color: #007bff; text-align: left; padding: 30px; background-color: #f8f9fa; border: 3px solid #007bff; border-radius: 15px;">
+                                </div>
+
+                                <!-- 보고서 생성 버튼 (AI 답변이 있을 때만 표시) -->
+
+                                <!-- 예측 차트 (실제 API 데이터 연결, 높이 증가) -->
+                                <div class="mt-4">
+                                    <h6 class="mb-2"><i class="fas fa-chart-line"></i> 월별 장애 예측</h6>
+                                    <div id="aiPredictionChart"
+                                        style="height: 300px; border: 1px solid #dee2e6; border-radius: 5px;"></div>
+                                    <!-- 보고서 생성 버튼 (AI 답변이 있을 때만 표시, 차트 아래로 이동) -->
+                                    <div id="reportButtonContainer" style="display:none;" class="mt-4 text-center">
+                                        <button id="generateReportBtn" class="btn btn-primary"
+                                            style="font-size:1.4rem; padding: 0.75rem 2.5rem;">
+                                            <i class="fas fa-file-alt"></i> AI 분석 보고서 생성
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        장애 보고서 목록
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 5%;">ID</th>
+                                        <th style="width: 20%;">장애명</th>
+                                        <th style="width: 15%;">장애일시</th>
+                                        <th style="width: 15%;">장소</th>
+                                        <th style="width: 25%;">원인</th>
+                                        <th style="width: 10%;">중요도</th>
+                                        <th style="width: 10%;">내용</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="faultsTableBody">
+                                    <!-- Fault data will be loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI 보고서 생성 모달 -->
+
+    <!-- Training Mode Floating Modal -->
+    <div id="trainingModal" class="training-modal">
+        <div class="training-modal-backdrop" onclick="closeTrainingModal()"></div>
+        <div class="training-modal-panel">
+            <div class="training-modal-header">
+                <h5>훈련 모드 선택</h5>
+                <button class="btn-close" onclick="closeTrainingModal()">×</button>
+            </div>
+            <div class="training-modal-body">
+                <p class="muted">시뮬레이터를 실행하여 예측된 장애 대응 훈련을 실시합니다.</p>
+                <div class="alert alert-warning w-100 text-center" role="alert">
+                    <strong><i class="fas fa-exclamation-triangle"></i> 보안 안내 및 활용 팁</strong><br>
+                    실제 전력 계통 시뮬레이터(12/22계통, 본선)는 국가 중요 시설 보안 규정에 따라 포함되지 않았습니다.<br>
+                    <hr>
+                    <small class="d-block text-left pl-3">
+                        <strong>💡 활용 방법:</strong><br>
+                        1. 이 버튼들을 <strong>CCTV 보기, 외부 링크, 대시보드</strong> 등 다른 기능으로 수정하여 사용하세요.<br>
+                        2. 또는 직접 제작한 시뮬레이터(SVG/JS)를 폴더에 넣고 연동하여 사용하세요.<br>
+                        (구현 예시는 <code>DTRO-Power-Simulator</code> 리포지토리 참조)
+                    </small>
+                </div>
+                <!--
+                    <button class="sim-btn sim-12" onclick="launchSimulator('12')"><i class="fas fa-bolt"></i><span>AC
+                            1/2계통<br><small>시뮬레이터</small></span></button>
+                    <button class="sim-btn sim-22" onclick="launchSimulator('22')"><i class="fas fa-bolt"></i><span>AC
+                            2/2계통<br><small>시뮬레이터</small></span></button>
+                    <button class="sim-btn sim-dc" onclick="launchSimulator('dc')"><i class="fas fa-train"></i><span>본선
+                            전차선<br><small>시뮬레이터</small></span></button>
+                    -->
+                <!-- training-note removed as requested -->
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Training modal styles */
+        .training-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            z-index: 2000;
+        }
+
+        .training-modal.open {
+            display: block;
+        }
+
+        .training-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(2px);
+        }
+
+        .training-modal-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 760px;
+            max-width: calc(100% - 120px);
+            background: linear-gradient(180deg, #ffffff, #f7fbff);
+            border-radius: 16px;
+            box-shadow: 0 20px 64px rgba(0, 0, 0, 0.36);
+            overflow: hidden;
+            transform: translate(-50%, -48%) scale(0.98);
+            animation: modalIn .18s cubic-bezier(.2, .8, .2, 1) forwards;
+            padding: 0;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -36%) scale(0.96);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .training-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 26px;
+            border-bottom: 1px solid #eef3ff;
+        }
+
+        .training-modal-header h5 {
+            margin: 0;
+            color: #0b5ed7;
+            font-size: 2.0rem;
+        }
+
+        .training-modal-header .btn-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .training-modal-body {
+            padding: 26px;
+        }
+
+        .training-modal-body .muted {
+            color: #6c757d;
+            margin-bottom: 16px;
+            font-size: 1.25rem;
+        }
+
+        .sim-buttons {
+            display: flex;
+            gap: 16px;
+            flex-wrap: nowrap;
+            align-items: stretch;
+        }
+
+        .sim-btn {
+            flex: 1 1 180px;
+            padding: 22px 20px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 900;
+            color: #fff;
+            box-shadow: 0 10px 28px rgba(11, 94, 215, 0.14);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-height: 130px;
+        }
+
+        .sim-btn i {
+            font-size: 36px;
+        }
+
+        .sim-btn span {
+            display: inline-block;
+            text-align: center;
+            line-height: 1.05;
+            font-size: 1.3rem;
+        }
+
+        .sim-btn small {
+            opacity: 0.95;
+            font-weight: 800;
+            font-size: 1rem;
+        }
+
+        .sim-12 {
+            background: linear-gradient(90deg, #4b7bec, #3867d6);
+        }
+
+        .sim-22 {
+            background: linear-gradient(90deg, #20bf6b, #0fbf5b);
+        }
+
+        .sim-dc {
+            background: linear-gradient(90deg, #fd7e14, #ff6b6b);
+        }
+
+        .training-note {
+            margin-top: 12px;
+            color: #8891a5;
+            font-size: 13px;
+        }
+
+        @media (max-width:760px) {
+            .training-modal-panel {
+                position: fixed;
+                left: 12px;
+                right: 12px;
+                top: 10%;
+                transform: none;
+                width: auto;
+            }
+
+            .training-modal-header h5 {
+                font-size: 1.25rem;
+            }
+
+            .sim-btn {
+                min-height: 100px;
+                padding: 14px;
+            }
+
+            .sim-btn i {
+                font-size: 24px;
+            }
+
+            .sim-btn span {
+                font-size: 1rem;
+            }
+        }
+    </style>
+    <div class="modal fade" id="aiReportModal" tabindex="-1" aria-labelledby="aiReportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="aiReportModalLabel">
+                        <i class="fas fa-robot"></i> AI 장애 분석 보고서
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- 보고서 메타 정보 -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card"
+                                style="background: linear-gradient(90deg, #e3f2fd 70%, #bbdefb 100%); box-shadow: 0 2px 8px rgba(0,0,0,0.07);">
+                                <div class="card-body" style="font-size:1.5rem;">
+                                    <h6 class="card-title" style="font-size:1.7rem;">보고서 정보</h6>
+                                    <p class="mb-1"><strong>장애명:</strong> <span id="reportFaultType">-</span></p>
+                                    <p class="mb-1"><strong>생성일시:</strong> <span id="reportDateTime">-</span></p>
+                                    <p class="mb-0"><strong>분석모드:</strong> <span id="reportMode">-</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card"
+                                style="background: linear-gradient(90deg, #fff3e0 70%, #ffe0b2 100%); box-shadow: 0 2px 8px rgba(0,0,0,0.07);">
+                                <div class="card-body" style="font-size:1.5rem;">
+                                    <h6 class="card-title" style="font-size:1.7rem;">통계 요약</h6>
+                                    <p class="mb-1"><strong>총 발생건수:</strong> <span id="reportTotalIncidents">-</span>건
+                                    </p>
+                                    <p class="mb-1"><strong>연평균 빈도:</strong> <span id="reportYearlyFreq">-</span>건</p>
+                                    <p class="mb-0"><strong>중요도:</strong> <span id="reportImportance">-</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI 분석 내용 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-brain"></i> AI 분석 내용</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="reportAiContent"
+                                style="white-space: pre-line; font-family: 'Noto Sans KR', sans-serif; line-height: 1.6; font-size:1.3rem;">
+                                <!-- AI 분석 내용이 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 예측 차트 -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-chart-line"></i> 월별 장애 예측</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="reportChartContainer" style="text-align: center; min-height: 200px;">
+                                <div id="modalPredictionChart" style="width: 100%; height: 450px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-success" id="downloadPdfBtn">
+                            <i class="fas fa-file-pdf"></i> PDF 다운로드
+                        </button>
+                        <button type="button" class="btn btn-info" id="downloadWordBtn">
+                            <i class="fas fa-file-code"></i> HTML 생성
+                        </button>
+                        <button type="button" class="btn btn-warning" id="printReportBtn">
+                            <i class="fas fa-print"></i> 인쇄
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" id="copyReportBtn">
+                            <i class="fas fa-copy"></i> 클립보드 복사
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Detailed Analysis Modal -->
+    <div class="modal fade" id="detailedAnalysisModal" tabindex="-1" aria-labelledby="detailedAnalysisModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detailedAnalysisModalLabel">상세 내용</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" style="position: relative;">
+                    <div id="modalLoadingOverlay"
+                        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; flex-direction: column;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                        <p class="mt-2" id="modalLoadingText">상세 내용 로딩 중...</p>
+                    </div>
+
+                    <!-- 장애 기본 정보 -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h4 class="mb-0" style="font-size:2rem;">📋 기본 정보</h4>
+                                </div>
+                                <div class="card-body">
+                                    <p style="font-size:1.3rem;"><strong>장애명:</strong> <span
+                                            id="modalFaultType">-</span></p>
+                                    <p style="font-size:1.3rem;"><strong>발생일시:</strong> <span
+                                            id="modalFaultDateTime">-</span></p>
+                                    <p style="font-size:1.3rem;"><strong>발생장소:</strong> <span
+                                            id="modalFaultLocation">-</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h4 class="mb-0" style="font-size:2rem;">⚠️ 장애 정보</h4>
+                                </div>
+                                <div class="card-body">
+                                    <p style="font-size:1.3rem; white-space:pre-line;"><strong>장애 원인:</strong> <span
+                                            id="modalFaultCause">-</span></p>
+                                    <p style="font-size:1.3rem; white-space:pre-line;"><strong>발생 현상:</strong> <span
+                                            id="modalFaultSymptom">-</span></p>
+                                    <p style="font-size:1.3rem; white-space:pre-line;"><strong>조치 방법:</strong> <span
+                                            id="modalFaultAction">-</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 원본 장애 보고서 -->
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h4 class="mb-0" style="font-size:2rem;">📄 원본 장애 보고서</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="modalOriginalText"
+                                style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; white-space: pre-line; font-family: 'Courier New', monospace; max-height: 400px; overflow-y: auto;">
+                                내용을 불러오는 중...
+                                <style>
+                                    #modalOriginalText {
+                                        font-size: 1.6rem;
+                                    }
+                                </style>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Prediction Dashboard Modal -->
+    <div class="modal fade" id="overallPredictionModal" tabindex="-1" aria-labelledby="overallPredictionModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="overallPredictionModalLabel">종합 예측 대시보드</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>모든 장애 유형에 대한 미래 발생 예측을 제공합니다.</p>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div id="overallPredictionChart" style="height: 400px; width: 80%;"></div>
+                        <div class="ml-3">
+                            <button id="downloadCsvBtn" class="btn btn-sm btn-outline-primary">CSV 다운로드</button>
+                        </div>
+                    </div>
+                    <div id="overallPredictionTable" class="table-responsive mt-3">
+                        <table class="table table-striped table-sm">
+                            <thead>
+                                <tr>
+                                    <th style="min-width:220px;">장애명</th>
+                                    <th>1월</th>
+                                    <th>2월</th>
+                                    <th>3월</th>
+                                    <th>4월</th>
+                                    <th>5월</th>
+                                    <th>6월</th>
+                                    <th>7월</th>
+                                    <th>8월</th>
+                                    <th>9월</th>
+                                    <th>10월</th>
+                                    <th>11월</th>
+                                    <th>12월</th>
+                                    <th>합계</th>
+                                    <th>모델</th>
+                                </tr>
+                            </thead>
+                            <tbody id="overallPredictionTableBody">
+                                <!-- Prediction data will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script>
+        console.log('스크립트 로드 시작');
+        let allFaults = [];
+        let filteredFaults = [];
+        let faultTypeChart = null; // ECharts instance for AI briefing
+        let overallChart = null;   // ECharts instance for overall prediction (전역 관리)
+        let currentAiReportData = null; // AI 보고서 데이터 저장
+
+        // 지식 검색 관련 전역 변수
+        let currentSearchResults = [];
+        let selectedResultIds = new Set();
+
+        // Helper function to debounce input
+        function debounce(func, delay) {
+            let timeout;
+            return function (...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        // Function to render faults table
+        function renderFaultsTable(faults) {
+            const tbody = document.getElementById('faultsTableBody');
+            tbody.innerHTML = '';
+            faults.forEach(fault => {
+                // Prepare tooltip text for detected keywords
+                let tooltipText = '';
+                if (fault.detected_keywords_json) {
+                    try {
+                        const detectedKeywords = JSON.parse(fault.detected_keywords_json);
+                        if (detectedKeywords.length > 0) {
+                            tooltipText = '감지된 키워드: ' + detectedKeywords.map(k => k.keyword).join(', ');
+                        } else {
+                            tooltipText = '감지된 키워드 없음';
+                        }
+                    } catch (e) {
+                        console.error('Error parsing detected_keywords_json:', e);
+                        tooltipText = '키워드 정보 로드 오류';
+                    }
+                } else {
+                    tooltipText = '키워드 정보 없음';
+                }
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${fault.id}</td>
+                    <td>${fault.fault_type}</td>
+                    <td>${fault.fault_datetime}</td>
+                    <td>${fault.location || 'N/A'}</td>
+                    <td>${fault.cause || 'N/A'}</td>
+                    <td><span class="badge badge-pill badge-risk-${fault.risk_level ? fault.risk_level.toLowerCase() : 'low'}" title="${tooltipText}">${fault.risk_level || '낮음'}</span></td>
+                    <td>
+                        <button class="btn btn-info btn-sm detailed-analysis-btn"
+                                data-id="${fault.id}"
+                                data-fault-type="${fault.fault_type}"
+                                data-raw-text="${fault.raw_text || ''}">상세 내용</button>
+                    </td>
+                `;
+            });
+        }
+
+        // Function to populate filter options
+        function populateFilters(faults) {
+            const faultTypes = [...new Set(faults.map(f => f.fault_type))].sort();
+            const years = [...new Set(faults.map(f => new Date(f.fault_datetime).getFullYear()))].sort((a, b) => b - a);
+
+            const faultTypeSelect = document.getElementById('faultTypeSelect');
+            faultTypeSelect.innerHTML = '<option value="">모든 장애 유형</option>';
+            faultTypes.forEach(type => {
+                faultTypeSelect.innerHTML += `<option value="${type}">${type}</option>`;
+            });
+
+            // 종합예측용 연도 선택 초기화 (현재년도, 현재년도+1)
+            initializePredictionYearSelect();
+        }
+
+        // 종합예측용 연도 선택 초기화 함수
+        function initializePredictionYearSelect() {
+            const currentYear = new Date().getFullYear();
+            const nextYear = currentYear + 1;
+
+            const predictionYearSelect = document.getElementById('predictionYearSelect');
+            predictionYearSelect.innerHTML = `
+                <option value="${currentYear}">${currentYear}년</option>
+                <option value="${nextYear}">${nextYear}년</option>
+            `;
+
+            // 기본값을 현재년도로 설정
+            predictionYearSelect.value = currentYear;
+        }
+
+        // Function to apply filters
+        function applyFilters() {
+            const faultType = document.getElementById('faultTypeSelect').value;
+
+            filteredFaults = allFaults.filter(fault => {
+                const matchesFaultType = !faultType || fault.fault_type === faultType;
+                return matchesFaultType;
+            });
+            renderFaultsTable(filteredFaults);
+            updateAIBriefing(faultType);
+        }
+
+        // Function to update AI Briefing
+        const updateAIBriefing = debounce(async (faultType) => {
+            const aiBriefingCard = document.getElementById('aiBriefingCard');
+            const aiSummaryText = document.getElementById('aiSummaryText');
+            const aiPredictionChartDiv = document.getElementById('aiPredictionChart');
+            const briefingStats = document.getElementById('briefingStats');
+            const reportButtonContainer = document.getElementById('reportButtonContainer');
+
+            if (!faultType) {
+                aiBriefingCard.style.display = 'none';
+                reportButtonContainer.style.display = 'none';
+                currentAiReportData = null;
+                return;
+            }
+
+            aiBriefingCard.style.display = 'block';
+            briefingStats.style.display = 'none'; // 초기에는 숨김
+            aiSummaryText.innerHTML = 'AI 분석중<span class="loading-dots">...</span>';
+            aiSummaryText.classList.add('loading-full');
+            // 분석 시작 시 원래 스타일 유지
+            aiSummaryText.style.fontSize = '3rem';
+            aiSummaryText.style.color = '#007bff';
+            aiSummaryText.style.fontWeight = 'bold';
+            if (faultTypeChart) {
+                faultTypeChart.dispose();
+            }
+            aiPredictionChartDiv.innerHTML = ''; // Clear previous chart
+
+            try {
+                const response = await fetch('/api/briefing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+                    body: JSON.stringify({ faultType })
+                });
+                const data = await response.json();
+
+                // 브리핑 텍스트 표시
+                aiSummaryText.textContent = data.ai_summary || 'AI 요약 정보를 가져올 수 없습니다.';
+                aiSummaryText.classList.remove('loading-full');
+                aiSummaryText.style.fontSize = '1.3rem';
+                aiSummaryText.style.color = 'black';
+                aiSummaryText.style.fontWeight = 'normal';
+
+                // AI 보고서 데이터 저장
+                if (data.ai_summary && data.ai_summary.includes('🤖 **AI 추천 조치방법**:')) {
+                    currentAiReportData = {
+                        fault_type: faultType || '선택된 장애',
+                        ai_summary: data.ai_summary,
+                        statistics: data.statistics,
+                        generated_at: new Date().toLocaleString('ko-KR')
+                    };
+                    reportButtonContainer.style.display = 'block';
+                } else {
+                    reportButtonContainer.style.display = 'none';
+                    currentAiReportData = null;
+                }
+
+                // 통계 정보가 있으면 통계 박스 표시
+                if (data.statistics && data.statistics.total_incidents > 0) {
+                    briefingStats.style.display = 'flex';
+
+                    // 통계 값 업데이트
+                    document.getElementById('totalIncidents').textContent = data.statistics.total_incidents || 0;
+
+                    const importanceLevelElement = document.getElementById('importanceLevel');
+                    importanceLevelElement.textContent = data.statistics.importance_level || '-';
+
+                    // 중요도에 따른 색상 변경
+                    importanceLevelElement.className = 'mb-0';
+                    if (data.statistics.importance_level === '높음') {
+                        importanceLevelElement.classList.add('text-danger');
+                    } else if (data.statistics.importance_level === '중간') {
+                        importanceLevelElement.classList.add('text-dark');
+                    } else if (data.statistics.importance_level === '낮음') {
+                        importanceLevelElement.classList.add('text-success');
+                    }
+
+                    document.getElementById('causesCount').textContent = data.statistics.causes_count || 0;
+                    document.getElementById('actionsCount').textContent = data.statistics.actions_count || 0;
+                }
+
+                // 예측 차트 - 종합예측 대시보드와 동일한 API 사용
+                const aiPredictionChartDiv = document.getElementById('aiPredictionChart');
+                try {
+                    // 현재 선택된 년도 가져오기
+                    const year = document.getElementById('predictionYearSelect')?.value || new Date().getFullYear();
+
+                    // 종합예측과 동일한 방식으로 API 호출
+                    const queryParams = new URLSearchParams();
+                    if (faultType) queryParams.append('fault_type', faultType);
+
+                    if (year) queryParams.append('year', year);
+
+                    const predictionUrl = queryParams.toString() ?
+                        `/api/overall_predictions?${queryParams.toString()}` :
+                        '/api/overall_predictions';
+
+                    console.log('Fetching prediction data from:', predictionUrl);
+                    const predictionResponse = await fetch(predictionUrl);
+
+                    if (predictionResponse.ok) {
+                        const predictions = await predictionResponse.json();
+                        console.log('Prediction data received:', predictions);
+
+                        if (predictions && predictions.length > 0) {
+                            // 선택된 장애 유형에 해당하는 예측만 필터링
+                            const targetPrediction = predictions.find(p => p.fault_type === faultType) || predictions[0];
+
+                            console.log('Target Prediction Data:', targetPrediction);
+                            if (!targetPrediction || !targetPrediction.monthly || targetPrediction.monthly.length === 0) {
+                                console.warn('No valid prediction data found for the selected fault type.');
+                            }
+
+                            if (targetPrediction && targetPrediction.monthly && targetPrediction.monthly.length > 0) {
+                                // ECharts 초기화
+                                if (faultTypeChart) {
+                                    faultTypeChart.dispose(); // 기존 차트 제거
+                                }
+                                faultTypeChart = echarts.init(aiPredictionChartDiv);
+
+                                // 월별 데이터 준비 (종합예측과 동일한 방식)
+                                const toMM = (s) => (typeof s === 'string' && s.length >= 7 ? s.slice(5) : '');
+                                const monthKeys = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+                                const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+                                const countsMap = new Map((targetPrediction.monthly || []).map(m => [toMM(m.month), m.predicted_count || 0]));
+                                const counts = monthKeys.map(mm => countsMap.get(mm) || 0);
+
+                                // 차트 옵션 설정 (막대 그래프)
+                                const option = {
+                                    tooltip: {
+                                        trigger: 'axis',
+                                        formatter: function (params) {
+                                            return `${params[0].name}: ${params[0].value}건`;
+                                        }
+                                    },
+                                    xAxis: {
+                                        type: 'category',
+                                        data: monthNames
+                                    },
+                                    yAxis: {
+                                        type: 'value',
+                                        name: '예상 장애 건수'
+                                    },
+                                    series: [{
+                                        name: '예측값',
+                                        data: counts,
+                                        type: 'bar',
+                                        itemStyle: {
+                                            color: '#007bff'
+                                        },
+                                        barWidth: '60%'
+                                    }]
+                                };
+                                faultTypeChart.setOption(option);
+
+                                // 차트 렌더링 완료 후 이미지 저장 (호환성 향상)
+                                setTimeout(() => {
+                                    if (currentAiReportData && faultTypeChart) {
+                                        try {
+                                            // 더 작은 크기로 이미지 생성 (호환성 개선)
+                                            const chartImageUrl = faultTypeChart.getDataURL({
+                                                type: 'png',
+                                                pixelRatio: 1,      // 해상도 낮춤
+                                                backgroundColor: '#ffffff',
+                                                width: 600,         // 크기 축소
+                                                height: 300         // 크기 축소
+                                            });
+
+                                            // 이미지 유효성 검증
+                                            if (validateChartImage(chartImageUrl)) {
+                                                currentAiReportData.predictionChartImage = chartImageUrl;
+                                            } else {
+                                                console.error('Generated chart image failed validation');
+                                                currentAiReportData.predictionChartImage = null;
+                                            }
+
+                                            // 월별 데이터를 예측 트렌드 형태로 변환
+                                            currentAiReportData.predictionTrendData = monthNames.map((name, index) => ({
+                                                month: name,
+                                                predicted_count: counts[index]
+                                            }));
+                                            console.log('Chart image saved successfully', {
+                                                imageLength: currentAiReportData.predictionChartImage?.length,
+                                                trendDataLength: currentAiReportData.predictionTrendData?.length,
+                                                hasImage: !!currentAiReportData.predictionChartImage,
+                                                imageStart: currentAiReportData.predictionChartImage?.substring(0, 30),
+                                                dimensions: '600x300px'
+                                            });
+                                        } catch (error) {
+                                            console.error('Error saving chart image:', error);
+                                            currentAiReportData.predictionChartImage = null;
+                                            currentAiReportData.predictionTrendData = null;
+                                        }
+                                    }
+                                }, 1500);  // 지연 시간 증가
+                            } else {
+                                // 해당 장애의 월별 데이터 없음
+                                aiPredictionChartDiv.innerHTML = '<p class="text-muted text-center pt-4">해당 장애의 예측 데이터 없음</p>';
+                                if (currentAiReportData) {
+                                    currentAiReportData.predictionChartImage = null;
+                                    currentAiReportData.predictionTrendData = null;
+                                }
+                            }
+                        } else {
+                            // 전체 예측 데이터 없음
+                            aiPredictionChartDiv.innerHTML = '<p class="text-muted text-center pt-4">예측 데이터를 사용할 수 없습니다.</p>';
+                            if (currentAiReportData) {
+                                currentAiReportData.predictionChartImage = null;
+                                currentAiReportData.predictionTrendData = null;
+                            }
+                        }
+                    } else {
+                        aiPredictionChartDiv.innerHTML = '<p class="text-warning text-center pt-4">예측 데이터 로드 실패</p>';
+                    }
+                } catch (predictionError) {
+                    console.error('Error fetching prediction data:', predictionError);
+                    aiPredictionChartDiv.innerHTML = '<p class="text-danger text-center pt-4">예측 차트 로드 오류</p>';
+                }
+
+            } catch (error) {
+                console.error('Error fetching AI briefing:', error);
+                aiSummaryText.textContent = 'AI 분석 브리핑 로드 실패.';
+                aiPredictionChartDiv.innerHTML = '<p class="text-danger">차트 로드 실패</p>';
+                briefingStats.style.display = 'none';
+                reportButtonContainer.style.display = 'none';
+                currentAiReportData = null;
+            }
+        }, 500); // 500ms debounce
+
+        // AI 보고서 생성 기능
+        document.getElementById('generateReportBtn').addEventListener('click', () => {
+            if (!currentAiReportData) {
+                alert('보고서를 생성할 AI 분석 데이터가 없습니다.');
+                return;
+            }
+
+            // 차트 이미지가 없는 경우 현재 브리핑 차트에서 생성
+            if (!currentAiReportData.predictionChartImage) {
+                // faultTypeChart에서 시도
+                if (faultTypeChart) {
+                    try {
+                        currentAiReportData.predictionChartImage = faultTypeChart.getDataURL({
+                            type: 'png',
+                            pixelRatio: 2,
+                            backgroundColor: '#fff',
+                            width: 1000,
+                            height: 500
+                        });
+                        console.log('Chart image generated from faultTypeChart');
+                    } catch (error) {
+                        console.error('Error generating chart image from faultTypeChart:', error);
+                    }
+                }
+
+                // 여전히 없으면 알림
+                if (!currentAiReportData.predictionChartImage) {
+                    console.warn('No chart image available for report generation');
+                }
+            }
+
+            // 모달에 데이터 채우기
+            document.getElementById('reportFaultType').textContent = currentAiReportData.fault_type;
+            document.getElementById('reportDateTime').textContent = currentAiReportData.generated_at;
+            document.getElementById('reportMode').textContent = currentAiReportData.statistics?.mode || 'SQL_LLM_Enhanced';
+            document.getElementById('reportTotalIncidents').textContent = currentAiReportData.statistics?.total_incidents || 0;
+            document.getElementById('reportYearlyFreq').textContent = currentAiReportData.statistics?.yearly_frequency?.toFixed(1) || '0.0';
+            document.getElementById('reportImportance').textContent = currentAiReportData.statistics?.importance_level || '정보없음';
+            // 중요도 색상 동적 적용
+            const importanceSpan = document.getElementById('reportImportance');
+            const importance = currentAiReportData.statistics?.importance_level || '정보없음';
+            importanceSpan.textContent = importance;
+            importanceSpan.className = '';
+            if (importance === '높음') {
+                importanceSpan.classList.add('badge', 'badge-pill', 'badge-risk-high');
+            } else if (importance === '중간') {
+                importanceSpan.classList.add('badge', 'badge-pill', 'badge-risk-medium');
+            } else if (importance === '낮음') {
+                importanceSpan.classList.add('badge', 'badge-pill', 'badge-risk-low');
+            }
+            document.getElementById('reportAiContent').textContent = currentAiReportData.ai_summary;
+
+            // 모달에 예측 차트 표시
+            const modalPredictionChartDiv = document.getElementById('modalPredictionChart');
+            if (currentAiReportData.predictionTrendData && currentAiReportData.predictionTrendData.length > 0) {
+                // 모달용 차트는 모달이 완전히 열린 후에 초기화
+                modalPredictionChartDiv.innerHTML = '<div style="text-align: center; padding: 50px;"><div class="spinner-border" role="status"></div><br><small>차트 로딩 중...</small></div>';
+
+                // 모달이 완전히 열린 후 차트 초기화
+                setTimeout(() => {
+                    const modalChart = echarts.init(modalPredictionChartDiv, null, {
+                        width: modalPredictionChartDiv.offsetWidth,
+                        height: 450
+                    });
+                    const option = {
+                        tooltip: {
+                            trigger: 'axis'
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: currentAiReportData.predictionTrendData.map(item => item.month || item.period)
+                        },
+                        yAxis: {
+                            type: 'value',
+                            name: '예상 장애 건수'
+                        },
+                        series: [{
+                            name: '예측값',
+                            data: currentAiReportData.predictionTrendData.map(item => item.predicted_count || item.value),
+                            type: 'bar',  // line에서 bar로 변경하여 더 명확하게 표시
+                            itemStyle: {
+                                color: '#007bff'
+                            },
+                            barWidth: '60%'
+                        }]
+                    };
+                    modalChart.setOption(option);
+                    // Store the chart instance
+                    currentAiReportData.modalChartInstance = modalChart;
+
+                    // 차트 크기 재조정
+                    setTimeout(() => {
+                        modalChart.resize();
+                    }, 100);
+                }, 300);
+            } else {
+                modalPredictionChartDiv.innerHTML = '<p class="text-muted">예측 데이터 없음</p>';
+                currentAiReportData.modalChartInstance = null; // Clear instance if no chart
+            }
+
+            // 모달 표시
+            $('#aiReportModal').modal('show');
+        });
+
+        // 모달이 닫힐 때 차트 인스턴스 정리
+        $('#aiReportModal').on('hidden.bs.modal', function () {
+            if (currentAiReportData && currentAiReportData.modalChartInstance) {
+                currentAiReportData.modalChartInstance.dispose();
+                currentAiReportData.modalChartInstance = null;
+            }
+        });
+
+        // 보고서 다운로드 기능들
+        document.getElementById('copyReportBtn').addEventListener('click', () => {
+            const reportText = generateReportText();
+            navigator.clipboard.writeText(reportText).then(() => {
+                alert('보고서가 클립보드에 복사되었습니다.');
+            }).catch(err => {
+                console.error('클립보드 복사 실패:', err);
+                alert('클립보드 복사에 실패했습니다.');
+            });
+        });
+
+        document.getElementById('printReportBtn').addEventListener('click', () => {
+            window.print();
+        });
+
+        document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+            // PDF 다운로드 기능 구현
+            const modalBody = document.querySelector('#aiReportModal .modal-body');
+            if (!modalBody) {
+                alert('보고서 내용을 찾을 수 없습니다.');
+                return;
+            }
+            html2canvas(modalBody, { scale: 3 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new window.jspdf.jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                // PDF에 이미지 삽입 (A4 전체 크기)
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+                pdf.save('AI_Report.pdf');
+            });
+        });
+
+        document.getElementById('downloadWordBtn').addEventListener('click', async () => {
+            try {
+                // 모달 차트 인스턴스 확인
+                if (!currentAiReportData.modalChartInstance) {
+                    console.error('Modal chart instance is not initialized.');
+                    alert('차트가 로드되지 않았습니다. 모달을 다시 열어주세요.');
+                    return;
+                }
+
+                // 차트 이미지 캡처
+                const chartImage = currentAiReportData.modalChartInstance.getDataURL({
+                    type: 'png',
+                    pixelRatio: 1, // 이미지 크기 최적화
+                });
+
+                if (!chartImage || !chartImage.startsWith('data:image/png;base64,')) {
+                    console.error('Failed to capture chart image:', chartImage);
+                    alert('차트 이미지를 캡처할 수 없습니다.');
+                    return;
+                }
+
+                // 보고서 텍스트 생성
+                const reportText = generateReportText().replace(/\n/g, '<br>');
+
+                // Word 문서 대신 HTML 파일로 저장 (base64 이미지 직접 삽입)
+                const htmlBlob = new Blob([`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>AI 장애 분석 보고서</title>
+</head>
+<body>
+    <h1>AI 장애 분석 보고서</h1>
+    <div>${reportText}</div>
+    <div><img src="${chartImage}" style="width: 600px; height: 300px;"/></div>
+    <button onclick="window.print()" style="margin-top:20px;">인쇄</button>
+</body>
+</html>
+                `], { type: 'text/html' });
+
+                const url = URL.createObjectURL(htmlBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'AI_Report.html';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error generating Word document:', error);
+                alert('Word 문서 생성 중 오류가 발생했습니다.');
+            }
+        });
+
+        async function generateChartImage(chartInstance) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const chartImage = chartInstance.getDataURL({
+                        type: 'png',
+                        pixelRatio: 1, // Reduce resolution
+                        backgroundColor: '#ffffff',
+                        width: 600, // Reduce size
+                        height: 300 // Reduce size
+                    });
+
+                    if (validateChartImage(chartImage)) {
+                        console.log('Chart image generated successfully:', {
+                            size: chartImage.length,
+                            preview: chartImage.substring(0, 50)
+                        });
+                        resolve(chartImage);
+                    } else {
+                        console.error('Chart image validation failed');
+                        reject('Invalid chart image');
+                    }
+                } catch (error) {
+                    console.error('Error generating chart image:', error);
+                    reject(error);
+                }
+            });
+        }
+
+        // 차트 이미지 유효성 검증 함수
+        function validateChartImage(imageDataUrl) {
+            if (!imageDataUrl || typeof imageDataUrl !== 'string') {
+                return false;
+            }
+
+            // Base64 데이터 URL 형식 확인
+            if (!imageDataUrl.startsWith('data:image/png;base64,')) {
+                return false;
+            }
+
+            // 이미지 크기 확인 (너무 크면 브라우저에서 문제 발생 가능)
+            const base64Data = imageDataUrl.split(',')[1];
+            if (!base64Data || base64Data.length > 500000) { // 500KB 제한
+                console.warn('Chart image too large:', base64Data?.length);
+                return false;
+            }
+
+            return true;
+        }
+
+        // 보고서 텍스트 생성 함수
+        function generateReportText() {
+            if (!currentAiReportData) return '';
+
+            return `AI 장애 분석 보고서
+
+장애명: ${currentAiReportData.fault_type}
+생성일시: ${currentAiReportData.generated_at}
+분석모드: ${currentAiReportData.statistics?.mode || 'SQL_LLM_Enhanced'}
+
+=== 통계 요약 ===
+총 발생건수: ${currentAiReportData.statistics?.total_incidents || 0}건
+연평균 빈도: ${currentAiReportData.statistics?.yearly_frequency?.toFixed(1) || '0.0'}건
+중요도: ${currentAiReportData.statistics?.importance_level || '정보없음'}
+
+=== AI 분석 내용 ===
+${currentAiReportData.ai_summary}
+
+※ 본 보고서는 AI 시스템에 의해 자동 생성된 분석 결과입니다.
+`;
+        }
+
+        // 보고서 HTML 생성 함수 (인쇄용)
+        function generateReportHtml() {
+            const reportText = generateReportText();
+
+            // 차트 이미지 상태 디버깅
+            console.log('generateReportHtml - Chart image status:', {
+                hasCurrentData: !!currentAiReportData,
+                hasChartImage: !!currentAiReportData?.predictionChartImage,
+                imageLength: currentAiReportData?.predictionChartImage?.length,
+                imagePreview: currentAiReportData?.predictionChartImage?.substring(0, 50) + '...'
+            });
+
+            // 차트 이미지 HTML 생성
+            let chartImageHtml = '';
+            if (currentAiReportData && currentAiReportData.predictionChartImage) {
+                console.log('Using chart image in report');
+                chartImageHtml = `
+                <div style="text-align: center; margin-top: 30px; page-break-inside: avoid;">
+                    <h3 style="color: #007bff; margin-bottom: 15px;">📊 월별 장애 예측</h3>
+                    <img src="${currentAiReportData.predictionChartImage}" style="width: 600px; height: 300px; border: 1px solid #ddd; border-radius: 5px;"/>
+                </div>`;
+            } else {
+                // 차트가 없을 때도 안내 메시지 표시
+                chartImageHtml = `
+                <div style="text-align: center; margin-top: 30px; page-break-inside: avoid;">
+                    <h3 style="color: #007bff; margin-bottom: 15px;">📊 월별 장애 예측</h3>
+                    <div style="border: 1px solid #ddd; border-radius: 5px; padding: 40px; background-color: #f8f9fa;">
+                        <p style="color: #6c757d; margin: 0;">예측 차트 데이터가 없습니다.</p>
+                    </div>
+                </div>`;
+            }
+
+            return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>AI 장애 분석 보고서</title>
+    <style>
+        body { 
+            font-family: 'Malgun Gothic', sans-serif; 
+            line-height: 1.8; 
+            margin: 40px; 
+            color: #333;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+        }
+        .content { 
+            white-space: pre-line; 
+            font-size: 14px;
+        }
+        h1 { color: #007bff; margin-bottom: 10px; }
+        .timestamp { color: #666; font-size: 12px; }
+        @media print {
+            .page-break { page-break-before: always; }
+            img { max-width: 100%; height: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 AI 장애 분석 보고서</h1>
+        <p class="timestamp">생성일시: ${currentAiReportData ? currentAiReportData.generated_at : new Date().toLocaleString()}</p>
+    </div>
+    <div class="content">${reportText}</div>
+    ${chartImageHtml}
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center;">
+        ※ 본 보고서는 AI 시스템에 의해 자동 생성된 분석 결과입니다.
+    </div>
+</body>
+</html>
+            `;
+        }
+
+        // Initial data fetch
+        async function fetchFaults() {
+            try {
+                const response = await fetch('/api/faults');
+                allFaults = await response.json();
+                populateFilters(allFaults);
+                applyFilters(); // Apply initial filters (empty)
+            } catch (error) {
+                console.error('Error fetching faults:', error);
+                document.getElementById('faultsTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger">장애 데이터를 불러오는 데 실패했습니다.</td></tr>';
+            }
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // If served via file://, browser blocks fetch to http APIs -> skip fetchFaults and warn
+            if (location.protocol === 'file:') {
+                console.warn('Running from file:// — API calls are blocked by browser. Start the server (start_node_only.bat) and open http://localhost:3000 to enable full functionality.');
+            } else {
+                fetchFaults();
+            }
+
+            // Attach training button listener safely (ensure element exists)
+            const tBtn = document.getElementById('trainingModeBtn');
+            if (tBtn) {
+                tBtn.addEventListener('click', () => {
+                    document.getElementById('trainingModal').classList.add('open');
+                });
+            } else {
+                console.warn('trainingModeBtn element not found in DOM.');
+            }
+        });
+
+        // Close handler
+        function closeTrainingModal() {
+            document.getElementById('trainingModal').classList.remove('open');
+        }
+
+        // Prevent clicks inside modal panel from closing it and add explicit close handlers
+        const panel = document.querySelector('.training-modal-panel');
+        if (panel) {
+            panel.addEventListener('click', (e) => {
+                e.stopPropagation(); // prevent backdrop from receiving clicks when clicking inside panel
+            });
+        }
+
+        const backdrop = document.querySelector('.training-modal-backdrop');
+        if (backdrop) {
+            backdrop.addEventListener('click', closeTrainingModal);
+        }
+
+        const closeBtn = document.querySelector('.training-modal-header .btn-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeTrainingModal);
+        }
+
+        // Launch simulator - opens the simulator folder index in a new tab/window
+        function launchSimulator(simKey) {
+            // If servers are already running on fixed ports, just open the matching URL.
+            const urlMap = {
+                '12': 'http://localhost:8111/index.html',
+                '22': 'http://localhost:8222/index.html',
+                'dc': 'http://localhost:8011/index.html'
+            };
+            const url = urlMap[simKey];
+            if (!url) {
+                alert('알 수 없는 시뮬레이터 키: ' + simKey);
+                return;
+            }
+            // Open in new tab/window; allow the browser/OS to choose
+            window.open(url, '_blank');
+            closeTrainingModal();
+        }
+
+        document.getElementById('faultTypeSelect').addEventListener('change', applyFilters);
+
+        // Detailed Analysis Modal - 상세 내용 표시
+        document.getElementById('faultsTableBody').addEventListener('click', async (event) => {
+            if (event.target.classList.contains('detailed-analysis-btn')) {
+                const faultId = event.target.dataset.id;
+                const faultType = event.target.dataset.faultType;
+
+                const modal = new bootstrap.Modal(document.getElementById('detailedAnalysisModal'));
+                modal.show();
+
+                // Show loading overlay
+                const modalLoadingOverlay = document.getElementById('modalLoadingOverlay');
+                const modalLoadingText = document.getElementById('modalLoadingText');
+                modalLoadingOverlay.style.display = 'flex';
+                modalLoadingText.textContent = '상세 내용 로딩 중...';
+
+                // Clear previous content
+                document.getElementById('modalFaultType').textContent = '-';
+                document.getElementById('modalFaultDateTime').textContent = '-';
+                document.getElementById('modalFaultLocation').textContent = '-';
+                document.getElementById('modalFaultCause').textContent = '-';
+                document.getElementById('modalFaultSymptom').textContent = '-';
+                document.getElementById('modalFaultAction').textContent = '-';
+                document.getElementById('modalOriginalText').textContent = '내용을 불러오는 중...';
+
+                try {
+                    // Fetch fault detail
+                    const response = await fetch('/api/fault_detail', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fault_id: faultId })
+                    });
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        // Populate basic information
+                        document.getElementById('modalFaultType').textContent = data.fault_type || '정보없음';
+                        document.getElementById('modalFaultDateTime').textContent = data.fault_datetime || '정보없음';
+                        document.getElementById('modalFaultLocation').textContent = data.fault_location || '정보없음';
+                        document.getElementById('modalFaultCause').textContent = data.fault_cause || '정보없음';
+                        document.getElementById('modalFaultSymptom').textContent = data.fault_symptom || '정보없음';
+                        document.getElementById('modalFaultAction').textContent = data.fault_action || '정보없음';
+
+                        // Format and display original text
+                        const originalText = data.original_text || '원본 텍스트 정보가 없습니다.';
+                        document.getElementById('modalOriginalText').textContent = formatOriginalText(originalText);
+                    } else {
+                        throw new Error(data.error || '데이터 로드 실패');
+                    }
+
+                } catch (error) {
+                    console.error('Error fetching fault detail:', error);
+                    document.getElementById('modalOriginalText').textContent = '상세 내용 로드 실패: ' + error.message;
+                } finally {
+                    // Hide loading overlay
+                    modalLoadingOverlay.style.display = 'none';
+                }
+            }
+        });
+
+        // Format original text for better readability
+        function formatOriginalText(text) {
+            if (!text) return '원본 텍스트가 없습니다.';
+
+            return text
+                .replace(/(\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.)/g, '\n📅 $1') // 날짜 포맷
+                .replace(/(일\s*시\s*:|시\s*간\s*:|장\s*소\s*:|원\s*인\s*:|개\s*요|개\s*황|조\s*치)/g, '\n\n🔹 $1') // 섹션 헤더
+                .replace(/(\d{2}:\d{2})/g, '⏰ $1') // 시간 포맷
+                .replace(/(완료|조치|복구|해결|정상)/g, '✅ $1') // 완료 상태
+                .replace(/(장애|고장|이상|오류|실패|문제)/g, '⚠️ $1') // 문제 상태
+                .replace(/^/, '📄 ') // 시작 부분에 아이콘 추가
+                .trim();
+        }
+
+
+
+        // Feedback buttons
+        document.getElementById('detailedAnalysisModal').addEventListener('click', async (event) => {
+            if (event.target.dataset.feedbackType) {
+                const feedbackType = event.target.dataset.feedbackType;
+                const faultId = document.querySelector('.detailed-analysis-btn').dataset.id; // Get current fault ID
+
+                try {
+                    await fetch('/api/feedback', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type: feedbackType, fault_id: faultId })
+                    });
+                    alert('피드백이 전송되었습니다. 감사합니다!');
+                } catch (error) {
+                    console.error('Error sending feedback:', error);
+                    alert('피드백 전송 실패.');
+                }
+            }
+        });
+
+        // Overall Prediction Dashboard Button
+        document.getElementById('overallPredictionBtn').addEventListener('click', async () => {
+            const modal = new bootstrap.Modal(document.getElementById('overallPredictionModal'));
+            modal.show();
+
+            const overallPredictionChartDiv = document.getElementById('overallPredictionChart');
+            const overallPredictionTableBody = document.getElementById('overallPredictionTableBody');
+
+            overallPredictionChartDiv.innerHTML = ''; // Clear previous chart
+            overallPredictionTableBody.innerHTML = '<tr><td colspan="3" class="text-center">예측 데이터 로딩 중...</td></tr>';
+
+            try {
+                const selectedType = document.getElementById('faultTypeSelect').value || '';
+                const selectedYear = document.getElementById('predictionYearSelect').value;
+
+                const q = new URLSearchParams();
+                if (selectedType) q.append('fault_type', selectedType);
+                if (selectedYear) q.append('year', selectedYear);
+
+                const url = q.toString() ? `http://localhost:3000/api/overall_predictions?${q.toString()}` : 'http://localhost:3000/api/overall_predictions';
+                const response = await fetch(url);
+                const predictions = await response.json();
+
+                overallPredictionTableBody.innerHTML = ''; // Clear loading message
+                if (predictions.length > 0) {
+                    // Render matrix: row = fault_type, cols = Jan..Dec + total
+                    const toMM = (s) => (typeof s === 'string' && s.length >= 7 ? s.slice(5) : '');
+                    const monthKeys = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+                    predictions.forEach(p => {
+                        const countsMap = new Map((p.monthly || []).map(m => [toMM(m.month), m.predicted_count || 0]));
+                        const counts = monthKeys.map(mm => countsMap.get(mm) || 0);
+                        const total = counts.reduce((a, b) => a + b, 0);
+                        const tr = document.createElement('tr');
+                        const cells = [`<td title="사용 모델: ${p.used_model || 'N/A'}">${p.fault_type}</td>`]
+                            .concat(counts.map(c => `<td>${c}</td>`))
+                            .concat([`<td><strong>${total}</strong></td>`, `<td>${p.used_model || 'N/A'}</td>`]);
+                        tr.innerHTML = cells.join('');
+                        overallPredictionTableBody.appendChild(tr);
+                    });
+
+                    // 안전한 차트 초기화 - 일관된 예측값 보장
+                    if (overallChart) {
+                        try {
+                            overallChart.dispose(); // 기존 차트 완전히 제거
+                        } catch (e) {
+                            console.warn('Chart dispose error:', e);
+                        }
+                        overallChart = null;
+                    }
+
+                    // DOM 상태 초기화 - 차트 컨테이너 완전 정리
+                    overallPredictionChartDiv.innerHTML = ''; // 내부 HTML 완전 정리
+                    overallPredictionChartDiv.removeAttribute('_echarts_instance_'); // ECharts 속성 제거
+                    overallPredictionChartDiv.style.width = '100%';
+                    overallPredictionChartDiv.style.height = '400px';
+
+                    // 강제 리플로우로 DOM 상태 확실히 업데이트
+                    overallPredictionChartDiv.offsetHeight; // 강제 리플로우
+
+                    // 새로운 차트 인스턴스 생성
+                    overallChart = echarts.init(overallPredictionChartDiv);
+
+                    // Keep a chart for quick glance: stacked bars per month across fault types
+                    const months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+                    const series = predictions.map(p => {
+                        const m = new Map((p.monthly || []).map(x => [toMM(x.month), x.predicted_count || 0]));
+                        const data = months.map(mm => m.get(mm) || 0);
+                        return { name: p.fault_type, type: 'bar', stack: 'total', emphasis: { focus: 'series' }, data };
+                    });
+                    overallChart.setOption({
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: { type: 'shadow' },
+                            formatter: function (params) {
+                                // 0건인 항목은 제외하고 표시
+                                const month = params[0].axisValue;
+                                const nonZeroItems = params.filter(item => item.value > 0);
+
+                                if (nonZeroItems.length === 0) {
+                                    return `${month}<br/>예측된 장애 없음`;
+                                }
+
+                                let result = `${month}<br/>`;
+                                nonZeroItems.forEach(item => {
+                                    result += `${item.marker} ${item.seriesName}: ${item.value}건<br/>`;
+                                });
+
+                                return result;
+                            }
+                        },
+                        legend: { type: 'scroll' },
+                        xAxis: { type: 'category', data: months.map(m => `${predictions[0].year}-${m}`) },
+                        yAxis: { type: 'value' },
+                        series,
+                        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true }
+                    });
+
+                    // CSV Download handler with user-defined filename
+                    document.getElementById('downloadCsvBtn').onclick = () => {
+                        if (!predictions || predictions.length === 0) {
+                            alert('다운로드할 예측 데이터가 없습니다.');
+                            return;
+                        }
+
+                        // 현재 날짜/시간으로 기본 파일명 생성
+                        const now = new Date();
+                        const timestamp = now.getFullYear() +
+                            ('0' + (now.getMonth() + 1)).slice(-2) +
+                            ('0' + now.getDate()).slice(-2) + '_' +
+                            ('0' + now.getHours()).slice(-2) +
+                            ('0' + now.getMinutes()).slice(-2);
+                        const defaultFilename = `예측결과_${timestamp}`;
+
+                        // 사용자에게 파일명 입력 요청
+                        const filename = prompt('CSV 파일명을 입력하세요 (확장자 제외):', defaultFilename);
+                        if (!filename) {
+                            alert('파일명을 입력해야 저장할 수 있습니다.');
+                            return;
+                        }
+
+                        const header = ['장애유형', '1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월', '연간총계', '사용모델'];
+                        const monthKeys = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+                        const toMM = (s) => (typeof s === 'string' && s.length >= 7 ? s.slice(5) : '');
+                        const rows = predictions.map(p => {
+                            const map = new Map((p.monthly || []).map(m => [toMM(m.month), m.predicted_count || 0]));
+                            const counts = monthKeys.map(mm => map.get(mm) || 0);
+                            const total = counts.reduce((a, b) => a + b, 0);
+                            return [p.fault_type, ...counts, total, (p.used_model || 'N/A')];
+                        });
+
+                        // UTF-8 BOM 추가로 한글 깨짐 방지
+                        const csv = '\uFEFF' + [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+                        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${filename}.csv`;
+
+                        // 다운로드 시작 전 알림
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+
+                        // 성공 알림
+                        alert(`"${filename}.csv" 파일이 다운로드 폴더에 저장되었습니다.`);
+                    };
+
+                } else {
+                    overallPredictionTableBody.innerHTML = '<tr><td colspan="3" class="text-center">예측 데이터를 찾을 수 없습니다.</td></tr>';
+                    overallPredictionChartDiv.innerHTML = '<p class="text-muted text-center">예측 차트 데이터 없음</p>';
+                }
+
+            } catch (error) {
+                console.error('Error fetching overall predictions:', error);
+                overallPredictionTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">예측 데이터 로드 실패.</td></tr>';
+                overallPredictionChartDiv.innerHTML = '<p class="danger text-center">예측 차트 로드 실패</p>';
+            }
+        });
+    </script>
+
+    <!-- 지식검색 플로팅 UI -->
+    <!-- 1. 개선된 플로팅 버튼 -->
+    <div id="knowledgeFloatingBtn" class="knowledge-floating-btn" tabindex="0" role="button" aria-label="지식검색 열기">
+        <div class="btn-icon">🔍</div>
+        <div class="btn-text">지식검색</div>
+        <span class="knowledge-badge" id="knowledgeBadge" style="display: none;">0</span>
+    </div>
+
+    <!-- 2. 미니 지식검색창 -->
+    <div id="knowledgeMiniWindow" class="knowledge-mini-window" style="display: none;">
+        <div class="knowledge-header">
+            <h6 class="knowledge-title">🔍 전력관제 지식검색</h6>
+            <div class="knowledge-controls">
+                <button id="knowledgeMinimizeBtn" class="btn-knowledge-control" title="최소화">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button id="knowledgeFullscreenBtn" class="btn-knowledge-control" title="전체화면">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button id="knowledgeCloseBtn" class="btn-knowledge-control" title="닫기">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="knowledge-body">
+            <!-- 검색 인터페이스 -->
+            <div class="knowledge-search-container">
+                <input type="text" id="knowledgeSearchInput" placeholder="질문 키워드를 입력하세요 (AND 조건)..."
+                    class="knowledge-search-input">
+                <button id="knowledgeSearchBtn" class="knowledge-search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+                <button id="knowledgeAddBtn" class="btn btn-success btn-sm ml-2" title="새 지식 추가">
+                    <i class="fas fa-plus"></i> 추가
+                </button>
+            </div>
+            <!-- 고급 옵션 -->
+            <div class="knowledge-advanced-container" style="display: none;">
+                <div class="advanced-toggle">
+                    <button id="toggleAdvancedBtn" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-cog"></i> 고급 옵션
+                    </button>
+                </div>
+                <div id="advancedOptions" class="advanced-options-panel" style="display: none;">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="enableQualityFilter" checked>
+                        <label class="form-check-label" for="enableQualityFilter">
+                            ⭐ 품질 필터링 (고품질 답변 우선)
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <!-- 검색 정보 -->
+            <div id="knowledgeSearchInfo" class="knowledge-search-info"></div>
+            <!-- 검색 결과 -->
+            <div id="knowledgeResults" class="knowledge-results">
+                <div class="text-center p-4 text-muted">
+                    <i class="fas fa-search fa-2x mb-2"></i>
+                    <br>키워드를 입력하여 검색하세요
+                </div>
+            </div>
+
+            <!-- AI 인사이트 섹션 -->
+            <div id="aiBriefingSection" class="ai-briefing-section" style="display: none;">
+                <div class="briefing-header">
+                    <h6>🤖 AI 인사이트</h6>
+                    <div class="briefing-controls">
+                        <button id="generateBriefingBtn" class="btn btn-primary btn-sm">
+                            <i class="fas fa-brain"></i> 인사이트 생성
+                        </button>
+                        <button id="knowledgeChatbotBtn" class="btn btn-success btn-sm">
+                            <i class="fas fa-comments"></i> 챗봇 열기
+                        </button>
+                        <button id="closeBriefingBtn" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="briefingContent" class="briefing-content">
+                    <div class="briefing-placeholder">
+                        <i class="fas fa-lightbulb fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">검색 결과를 종합한 AI 인사이트를 생성합니다.<br>
+                            관련 키워드와 맥락을 분석하여 유용한 정보를 제공합니다.</p>
+                        <small class="text-muted">생성 시간: 약 3-5초</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 전체화면 모드 -->
+    <div id="knowledgeFullscreen" class="knowledge-fullscreen" style="display: none;">
+        <div class="knowledge-fullscreen-header">
+            <h4>🔍 전력관제 지식 검색 시스템</h4>
+            <div class="knowledge-controls">
+                <button id="knowledgeExitFullscreenBtn" class="btn-knowledge-control" title="창모드로 복귀">
+                    <i class="fas fa-compress"></i>
+                </button>
+                <button id="knowledgeFullscreenCloseBtn" class="btn-knowledge-control" title="닫기">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="knowledge-fullscreen-body">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <!-- 고급 옵션 추가 -->
+                        <div class="knowledge-advanced-container mb-4">
+                            <div class="advanced-toggle">
+                                <button id="toggleAdvancedBtnFullscreen" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-cog"></i> 고급 옵션
+                                </button>
+                            </div>
+                            <div id="advancedOptionsFullscreen" class="advanced-options-panel" style="display: none;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="enableQualityFilterFullscreen"
+                                        checked>
+                                    <label class="form-check-label" for="enableQualityFilterFullscreen">
+                                        ⭐ 품질 필터링 (고품질 답변 우선)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="search-section mb-4">
+                            <div class="input-group input-group-lg">
+                                <input type="text" id="knowledgeFullscreenSearchInput"
+                                    placeholder="질문 키워드를 입력하세요 (여러 키워드는 공백으로 구분, AND 조건)..." class="form-control">
+                                <div class="input-group-append">
+                                    <button id="knowledgeFullscreenSearchBtn" class="btn btn-primary" type="button">
+                                        <i class="fas fa-search"></i> 검색
+                                    </button>
+                                    <button id="knowledgeFullscreenAddBtn" class="btn btn-success" type="button">
+                                        <i class="fas fa-plus"></i> 새 지식 추가
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="knowledgeFullscreenSearchInfo" class="search-info-section"></div>
+                        <div id="knowledgeFullscreenResults" class="results-section">
+                            <div class="text-center p-5 text-muted">
+                                <i class="fas fa-search fa-4x mb-3"></i>
+                                <h5>전력관제 지식 검색</h5>
+                                <p>키워드를 입력하여 전력관제 관련 지식을 검색하세요.<br>
+                                    여러 키워드 입력 시 모든 키워드가 포함된 결과만 표시됩니다.</p>
+                            </div>
+                        </div>
+
+                        <!-- AI 인사이트 섹션 (전체화면 모드) -->
+                        <div id="aiBriefingSectionFullscreen" class="ai-briefing-section" style="display: none;">
+                            <div class="briefing-header">
+                                <h6>🤖 AI 인사이트 (전체화면)</h6>
+                                <div class="briefing-controls">
+                                    <button id="generateBriefingBtnFullscreen" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-brain"></i> 인사이트 생성
+                                    </button>
+                                    <button id="closeBriefingBtnFullscreen" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="briefingContentFullscreen" class="briefing-content">
+                                <div class="briefing-placeholder">
+                                    <i class="fas fa-lightbulb fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">AI 인사이트가 준비되면 여기에 표시됩니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 지식 상세보기 모달 (읽기 전용) -->
+    <div id="knowledgeDetailModal" class="modal fade" tabindex="-1" aria-labelledby="knowledgeDetailModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="knowledgeDetailModalLabel">지식 상세보기</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="knowledgeDetailContent">
+                        <!-- 동적 내용 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. 지식 편집 모달 -->
+    <div id="knowledgeEditModal" class="modal fade" tabindex="-1" aria-labelledby="knowledgeEditModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="knowledgeEditModalLabel">지식 편집</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- 편집 폼 -->
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="editQuestion" class="form-label">질문</label>
+                                <input type="text" class="form-control" id="editQuestion" placeholder="질문을 입력하세요">
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="editAnswer" class="form-label">답변</label>
+                                <textarea class="form-control" id="editAnswer" rows="8"
+                                    placeholder="답변을 입력하세요"></textarea>
+                            </div>
+                        </div>
+                        <!-- 실시간 미리보기 -->
+                        <div class="col-md-6">
+                            <div class="preview-section">
+                                <h6>미리보기</h6>
+                                <div class="preview-content">
+                                    <div class="preview-question" id="previewQuestion"></div>
+                                    <div class="preview-answer" id="previewAnswer"></div>
+                                </div>
+                            </div>
+                            <!-- 유사 질문 경고 -->
+                            <div id="similarWarning" class="alert alert-warning mt-3" style="display: none;">
+                                <strong>유사한 질문 발견:</strong>
+                                <ul id="similarList"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-danger" id="deleteKnowledgeBtn"
+                        style="display: none;">삭제</button>
+                    <button type="button" class="btn btn-primary" id="saveKnowledgeBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. 지식 추가 모달 -->
+    <div id="knowledgeAddModal" class="modal fade" tabindex="-1" aria-labelledby="knowledgeAddModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="knowledgeAddModalLabel">새 지식 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-3">
+                        <label for="newQuestion" class="form-label">질문</label>
+                        <input type="text" class="form-control" id="newQuestion" placeholder="새 질문을 입력하세요">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="newAnswer" class="form-label">답변</label>
+                        <textarea class="form-control" id="newAnswer" rows="6" placeholder="답변을 입력하세요"></textarea>
+                    </div>
+                    <!-- 유사 질문 경고 -->
+                    <div id="addSimilarWarning" class="alert alert-warning" style="display: none;">
+                        <strong>유사한 질문이 이미 존재합니다:</strong>
+                        <ul id="addSimilarList"></ul>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="forceAdd">
+                            <label class="form-check-label" for="forceAdd">
+                                그래도 추가하기
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="addKnowledgeBtn">추가</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 지식검색 CSS 스타일 -->
+    <style>
+        /* 플로팅 버튼 - 노안 친화적 개선 (2배 크기) */
+        .knowledge-floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 160px;
+            /* 80px → 160px (2배) */
+            height: 160px;
+            /* 80px → 160px (2배) */
+            background: linear-gradient(135deg, #28a745 0%, #20c997 50%, #17a2b8 100%);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow:
+                0 6px 20px rgba(40, 167, 69, 0.4),
+                0 2px 10px rgba(40, 167, 69, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-size: 52px;
+            /* 26px → 52px (2배) */
+            border: 6px solid rgba(255, 255, 255, 0.3);
+            /* 3px → 6px (2배) */
+            backdrop-filter: blur(10px);
+        }
+
+        .knowledge-floating-btn:hover {
+            transform: scale(1.15) translateY(-2px);
+            box-shadow:
+                0 12px 35px rgba(40, 167, 69, 0.6),
+                0 4px 15px rgba(40, 167, 69, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .knowledge-floating-btn:active {
+            transform: scale(1.05) translateY(0px);
+            transition: all 0.1s ease;
+        }
+
+        /* 플로팅 버튼 내부 텍스트 (2배 크기) */
+        .knowledge-floating-btn .btn-icon {
+            font-size: 56px;
+            /* 28px → 56px (2배) */
+            margin-bottom: 4px;
+            /* 2px → 4px (2배) */
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .knowledge-floating-btn .btn-text {
+            font-size: 22px;
+            /* 11px → 22px (2배) */
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            letter-spacing: 1px;
+            /* 0.5px → 1px (2배) */
+        }
+
+        .knowledge-badge {
+            position: absolute;
+            top: -16px;
+            /* -8px → -16px (2배) */
+            right: -16px;
+            /* -8px → -16px (2배) */
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            border-radius: 30px;
+            /* 15px → 30px (2배) */
+            padding: 8px 16px;
+            /* 4px 8px → 8px 16px (2배) */
+            font-size: 28px;
+            /* 14px → 28px (2배) */
+            font-weight: bold;
+            min-width: 48px;
+            /* 24px → 48px (2배) */
+            height: 48px;
+            /* 24px → 48px (2배) */
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(220, 53, 69, 0.5);
+            border: 4px solid white;
+            /* 2px → 4px (2배) */
+            line-height: 32px;
+            /* 16px → 32px (2배) */
+        }
+
+        /* 펄스 애니메이션 효과 (2배 크기) */
+        .knowledge-floating-btn::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            /* -3px → -6px (2배) */
+            left: -6px;
+            /* -3px → -6px (2배) */
+            right: -6px;
+            /* -3px → -6px (2배) */
+            bottom: -6px;
+            /* -3px → -6px (2배) */
+            border-radius: 50%;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            opacity: 0.6;
+            z-index: -1;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.3;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+        }
+
+        /* 접근성을 위한 포커스 스타일 */
+        .knowledge-floating-btn:focus {
+            outline: none;
+            box-shadow:
+                0 12px 35px rgba(40, 167, 69, 0.6),
+                0 4px 15px rgba(40, 167, 69, 0.3),
+                0 0 0 8px rgba(40, 167, 69, 0.3);
+            /* 4px → 8px (2배) */
+        }
+
+        /* 미니 검색창 */
+        .knowledge-mini-window {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 420px;
+            height: 550px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            flex-direction: column;
+            resize: both;
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+
+        .knowledge-header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 12px 12px 0 0;
+            cursor: move;
+        }
+
+        .knowledge-title {
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .knowledge-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-knowledge-control {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-knowledge-control:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .knowledge-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .knowledge-search-container {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .knowledge-search-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .knowledge-search-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .knowledge-search-info {
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .knowledge-results {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        /* 전체화면 모드 */
+        .knowledge-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: white;
+            z-index: 1002;
+            flex-direction: column;
+        }
+
+        .knowledge-fullscreen-header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .knowledge-fullscreen-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .search-section {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .search-info-section {
+            max-width: 800px;
+            margin: 0 auto 20px;
+        }
+
+        .results-section {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* 검색 결과 스타일 */
+        .knowledge-result-item {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: box-shadow 0.2s;
+        }
+
+        .knowledge-result-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .result-rank {
+            font-size: 12px;
+        }
+
+        .result-keywords .badge {
+            font-size: 10px;
+            margin-right: 3px;
+        }
+
+        .result-question {
+            margin-bottom: 10px;
+        }
+
+        .question-text,
+        .answer-preview {
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        .result-answer {
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .result-actions {
+            text-align: right;
+        }
+
+        /* 키워드 하이라이팅 */
+        .keyword-highlight {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 1px 3px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        /* 반응형 및 추가 개선 */
+        @media (max-width: 768px) {
+            .knowledge-floating-btn {
+                width: 70px;
+                height: 70px;
+                bottom: 20px;
+                right: 20px;
+                font-size: 24px;
+            }
+
+            .knowledge-floating-btn .btn-icon {
+                font-size: 24px;
+            }
+
+            .knowledge-floating-btn .btn-text {
+                font-size: 10px;
+            }
+
+            .knowledge-mini-window {
+                width: calc(100vw - 40px);
+                right: 20px;
+                left: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .knowledge-floating-btn {
+                width: 65px;
+                height: 65px;
+                bottom: 15px;
+                right: 15px;
+            }
+
+            .knowledge-floating-btn .btn-text {
+                font-size: 9px;
+            }
+        }
+
+        /* 고대비 모드 지원 */
+        @media (prefers-contrast: high) {
+            .knowledge-floating-btn {
+                border: 4px solid white;
+                background: #28a745;
+            }
+
+            .knowledge-badge {
+                border: 3px solid white;
+            }
+        }
+
+        /* 애니메이션 줄이기 선호 시 */
+        @media (prefers-reduced-motion: reduce) {
+            .knowledge-floating-btn {
+                transition: none;
+            }
+
+            .knowledge-floating-btn::before {
+                animation: none;
+            }
+
+            .knowledge-floating-btn:hover {
+                transform: scale(1.05);
+            }
+        }
+    </style>
+
+    <!-- 지식 편집/추가/브리핑 CSS 스타일 -->
+    <style>
+        /* 미리보기 섹션 */
+        .preview-section {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+        }
+
+        .preview-content {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            border: 1px solid #e9ecef;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .preview-question {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .preview-answer {
+            color: #6c757d;
+            line-height: 1.5;
+        }
+
+        /* 유사 질문 경고 */
+        .similar-list {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        /* AI 인사이트 섹션 */
+        .ai-briefing-section {
+            margin-top: 20px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .briefing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e9ecef;
+            background: white;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .briefing-content {
+            padding: 20px;
+            background: white;
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* 지식 검색 AI 인사이트에만 스크롤 적용 */
+        #briefingContent,
+        #briefingContentFullscreen {
+            max-height: 800px;
+            overflow-y: auto;
+        }
+
+        .briefing-placeholder {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .briefing-loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .briefing-result {
+            line-height: 1.6;
+        }
+
+        .briefing-meta {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .briefing-text p {
+            margin-bottom: 1rem;
+        }
+
+        .briefing-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 15px;
+        }
+
+        /* 용어 배지 */
+        .term-badge {
+            display: inline-block;
+            background: #e9ecef;
+            color: #495057;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin: 2px;
+        }
+
+        .term-badge.highlighted {
+            background: #28a745;
+            color: white;
+        }
+
+        /* 품질 표시기 */
+        .quality-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+        }
+
+        .quality-score.excellent {
+            color: #28a745;
+        }
+
+        .quality-score.good {
+            color: #17a2b8;
+        }
+
+        .quality-score.fair {
+            color: #ffc107;
+        }
+
+        .quality-score.poor {
+            color: #dc3545;
+        }
+
+        /* 고급 옵션 */
+        .knowledge-advanced-container {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .advanced-toggle {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .advanced-options-panel {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+
+        .advanced-options-panel .form-check {
+            margin-bottom: 10px;
+        }
+
+        .advanced-options-panel .form-check-label {
+            font-size: 14px;
+            margin-left: 5px;
+        }
+
+        /* 편집 버튼들 - 상세보기 버튼 위에 인라인으로 표시 */
+        .edit-actions {
+            display: flex !important;
+            gap: 8px;
+            justify-content: flex-start;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .result-item:hover .edit-actions {
+            opacity: 1;
+        }
+
+        /* 전체화면 고급 옵션 */
+        .knowledge-fullscreen .knowledge-advanced-container {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .knowledge-fullscreen .advanced-options-panel {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            margin-top: 10px;
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .preview-section {
+                margin-top: 1rem;
+            }
+
+            .briefing-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .briefing-controls {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+
+    <!-- 지식검색 JavaScript -->
+    <script>
+        // 지식검색 UI 클래스
+        class KnowledgeSearchUI {
+            constructor() {
+                this.isMinimized = true;
+                this.isFullscreen = false;
+                this.currentPage = 1;
+                this.resultsPerPage = 50; // 플로팅 창에서 더 많은 결과 표시
+                this.lastQuery = '';
+                this.isSearching = false;
+
+                this.initEventListeners();
+                this.initDrag();
+            }
+
+            initEventListeners() {
+                // 플로팅 버튼 클릭 및 키보드 접근성
+                const floatingBtn = document.getElementById('knowledgeFloatingBtn');
+
+                floatingBtn.addEventListener('click', () => {
+                    this.showMiniWindow();
+                });
+
+                // 키보드 접근성 (Enter, Space)
+                floatingBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.showMiniWindow();
+                    }
+                });
+
+                // 미니창 컨트롤 버튼들
+                document.getElementById('knowledgeMinimizeBtn').addEventListener('click', () => {
+                    this.showFloating();
+                });
+
+                document.getElementById('knowledgeFullscreenBtn').addEventListener('click', () => {
+                    this.showFullscreen();
+                });
+
+                document.getElementById('knowledgeCloseBtn').addEventListener('click', () => {
+                    this.showFloating();
+                });
+
+                // 전체화면 컨트롤 버튼들
+                document.getElementById('knowledgeExitFullscreenBtn').addEventListener('click', () => {
+                    this.showMiniWindow();
+                });
+
+                document.getElementById('knowledgeFullscreenCloseBtn').addEventListener('click', () => {
+                    this.showFloating();
+                });
+
+                // 검색 기능
+                document.getElementById('knowledgeSearchBtn').addEventListener('click', () => {
+                    const query = document.getElementById('knowledgeSearchInput').value;
+                    this.performSearch(query);
+                });
+
+                document.getElementById('knowledgeFullscreenSearchBtn').addEventListener('click', () => {
+                    const query = document.getElementById('knowledgeFullscreenSearchInput').value;
+                    this.performSearch(query);
+                });
+
+                // 엔터키로 검색
+                document.getElementById('knowledgeSearchInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.performSearch(e.target.value);
+                    }
+                });
+
+                document.getElementById('knowledgeFullscreenSearchInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.performSearch(e.target.value);
+                    }
+                });
+
+                // 실시간 검색 (debounce)
+                let searchTimeout;
+                const handleRealTimeSearch = (e) => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        if (e.target.value.trim().length >= 2) {
+                            this.performSearch(e.target.value);
+                        }
+                    }, 500);
+                };
+
+                document.getElementById('knowledgeSearchInput').addEventListener('input', handleRealTimeSearch);
+                document.getElementById('knowledgeFullscreenSearchInput').addEventListener('input', handleRealTimeSearch);
+
+                // 검색 결과에서 상세보기 버튼 클릭 (이벤트 위임)
+                document.getElementById('knowledgeResults').addEventListener('click', (e) => {
+                    if (e.target.closest('.detailed-analysis-btn')) {
+                        // 기존 상세보기 모달 사용
+                        this.showKnowledgeDetail(e.target.closest('.detailed-analysis-btn'));
+                    }
+                });
+
+                document.getElementById('knowledgeFullscreenResults').addEventListener('click', (e) => {
+                    if (e.target.closest('.detailed-analysis-btn')) {
+                        this.showKnowledgeDetail(e.target.closest('.detailed-analysis-btn'));
+                    }
+                });
+
+                // 추가 버튼 이벤트 리스너
+                document.getElementById('knowledgeAddBtn')?.addEventListener('click', () => {
+                    if (window.enhancedKnowledgeSystem?.editor) {
+                        window.enhancedKnowledgeSystem.editor.showAddModal();
+                    }
+                });
+
+                document.getElementById('knowledgeFullscreenAddBtn')?.addEventListener('click', () => {
+                    if (window.enhancedKnowledgeSystem?.editor) {
+                        window.enhancedKnowledgeSystem.editor.showAddModal();
+                    }
+                });
+            }
+
+            initDrag() {
+                // 미니창 드래그 기능
+                let isDragging = false;
+                let currentX, currentY, initialX, initialY;
+                const miniWindow = document.getElementById('knowledgeMiniWindow');
+                const header = miniWindow.querySelector('.knowledge-header');
+
+                header.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    initialX = e.clientX - miniWindow.offsetLeft;
+                    initialY = e.clientY - miniWindow.offsetTop;
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        e.preventDefault();
+                        currentX = e.clientX - initialX;
+                        currentY = e.clientY - initialY;
+
+                        miniWindow.style.left = currentX + 'px';
+                        miniWindow.style.top = currentY + 'px';
+                        miniWindow.style.right = 'auto';
+                        miniWindow.style.bottom = 'auto';
+                    }
+                });
+
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                });
+            }
+
+            // 상태 전환 메서드들
+            showFloating() {
+                document.getElementById('knowledgeFloatingBtn').style.display = 'flex';
+                document.getElementById('knowledgeMiniWindow').style.display = 'none';
+                document.getElementById('knowledgeFullscreen').style.display = 'none';
+                this.isMinimized = true;
+                this.isFullscreen = false;
+            }
+
+            showMiniWindow() {
+                document.getElementById('knowledgeFloatingBtn').style.display = 'none';
+                document.getElementById('knowledgeMiniWindow').style.display = 'flex';
+                document.getElementById('knowledgeFullscreen').style.display = 'none';
+                this.isMinimized = false;
+                this.isFullscreen = false;
+
+                // 검색창에 포커스
+                setTimeout(() => {
+                    document.getElementById('knowledgeSearchInput').focus();
+                }, 100);
+            }
+
+            showFullscreen() {
+                document.getElementById('knowledgeFloatingBtn').style.display = 'none';
+                document.getElementById('knowledgeMiniWindow').style.display = 'none';
+                document.getElementById('knowledgeFullscreen').style.display = 'flex';
+                this.isMinimized = false;
+                this.isFullscreen = true;
+
+                // 검색어 동기화
+                const miniSearchValue = document.getElementById('knowledgeSearchInput').value;
+                document.getElementById('knowledgeFullscreenSearchInput').value = miniSearchValue;
+
+                // 검색창에 포커스
+                setTimeout(() => {
+                    document.getElementById('knowledgeFullscreenSearchInput').focus();
+                }, 100);
+            }
+
+            // 검색 기능
+            async performSearch(query) {
+                if (this.isSearching || !query || query.trim().length === 0) return;
+
+                this.isSearching = true;
+                this.lastQuery = query.trim();
+
+                // UI 업데이트
+                this.updateSearchUI(true);
+
+                try {
+                    const response = await fetch('/api/knowledge/search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: query.trim(),
+                            page: 1,
+                            limit: this.resultsPerPage
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        this.renderResults(data.data);
+                        this.updateSearchInfo(data.data);
+                    } else {
+                        throw new Error(data.error || '검색 실패');
+                    }
+
+                } catch (error) {
+                    console.error('검색 오류:', error);
+                    this.renderError(error.message);
+                } finally {
+                    this.isSearching = false;
+                    this.updateSearchUI(false);
+                }
+            }
+
+            updateSearchUI(isSearching) {
+                const miniBtn = document.getElementById('knowledgeSearchBtn');
+                const fullBtn = document.getElementById('knowledgeFullscreenSearchBtn');
+
+                if (isSearching) {
+                    miniBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    fullBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 검색중...';
+                } else {
+                    miniBtn.innerHTML = '<i class="fas fa-search"></i>';
+                    fullBtn.innerHTML = '<i class="fas fa-search"></i> 검색';
+                }
+            }
+
+            renderResults(data) {
+                const miniContainer = document.getElementById('knowledgeResults');
+                const fullscreenContainer = document.getElementById('knowledgeFullscreenResults');
+                const { results, total, keywords } = data;
+
+                // 배지 업데이트
+                const badge = document.getElementById('knowledgeBadge');
+                if (total > 0) {
+                    badge.textContent = total;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+
+                if (results.length === 0) {
+                    const noResultsHTML = `
+                        <div class="no-results text-center p-4">
+                            <i class="fas fa-search-minus fa-3x text-muted mb-3"></i>
+                            <h6>검색 결과가 없습니다</h6>
+                            <p class="text-muted">
+                                키워드 <strong>[${keywords.join(', ')}]</strong>가 모두 포함된 질문을 찾을 수 없습니다.<br>
+                                다른 키워드로 검색해보세요.
+                            </p>
+                        </div>`;
+                    miniContainer.innerHTML = noResultsHTML;
+                    fullscreenContainer.innerHTML = noResultsHTML;
+                    this.currentResults = [];
+                    return;
+                }
+
+                const resultsHTML = results.map((result, index) => `
+                    <div class="knowledge-result-item" data-index="${index}">
+                        <div class="result-header">
+                            <div class="result-rank">
+                                <span class="badge badge-primary">${result.rank}</span>
+                                <span class="text-muted ml-2">관련도: ${result.relevance_score}점</span>
+                            </div>
+                            <div class="result-keywords">
+                                ${result.matched_keywords.map(kw =>
+                    `<span class="badge badge-success badge-sm">${kw}</span>`
+                ).join(' ')}
+                            </div>
+                        </div>
+                        
+                        <div class="result-question">
+                            <strong class="text-primary">Q:</strong>
+                            <div class="question-text">${result.highlighted_question}</div>
+                        </div>
+                        
+                        <div class="result-answer">
+                            <strong class="text-success">A:</strong>
+                            <div class="answer-preview text-muted">${result.answer_preview}</div>
+                        </div>
+                        
+                        <div class="result-actions">
+                            <button class="btn btn-outline-primary btn-sm detailed-analysis-btn"
+                                    data-source="knowledge"
+                                    data-question="${this.escapeHtml(result.question)}"
+                                    data-answer="${this.escapeHtml(result.answer)}">
+                                <i class="fas fa-eye"></i> 상세보기
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+                miniContainer.innerHTML = resultsHTML;
+                fullscreenContainer.innerHTML = resultsHTML;
+
+                // 현재 결과를 저장하여 편집 기능에서 사용
+                this.currentResults = results;
+
+                // 검색 결과가 있으면 AI 인사이트 옵션 표시 (현재 모드에 맞게)
+                if (results && results.length > 0 && window.knowledgeSearchUI && window.knowledgeSearchUI.briefing) {
+                    console.log('AI 인사이트 옵션 표시 시도, isFullscreen:', this.isFullscreen);
+                    window.knowledgeSearchUI.briefing.showBriefingOption(results);
+                    console.log('AI 인사이트 옵션 표시 완료');
+                } else {
+                    console.log('AI 인사이트 옵션 표시 조건 불충족:', {
+                        results: !!results,
+                        resultsLength: results?.length,
+                        knowledgeSearchUI: !!window.knowledgeSearchUI,
+                        briefing: !!window.knowledgeSearchUI?.briefing
+                    });
+                }
+            }
+
+            updateSearchInfo(data) {
+                const { total, keywords, searchTime, searchStats } = data;
+                const miniInfo = document.getElementById('knowledgeSearchInfo');
+                const fullInfo = document.getElementById('knowledgeFullscreenSearchInfo');
+
+                const infoHTML = `
+                    <div class="alert alert-info mb-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>검색 결과:</strong> ${total}건<br>
+                                <strong>키워드:</strong> [${keywords.join(', ')}] (AND 조건)
+                            </div>
+                            <div class="col-md-6">
+                                <strong>검색 시간:</strong> ${searchTime}<br>
+                                <strong>검색 대상:</strong> 질문(Q) 데이터만
+                            </div>
+                        </div>
+                        ${searchStats ? `
+                        <hr class="my-2">
+                        <small class="text-muted">
+                            첫 키워드 매칭: ${searchStats.candidatesAfterFirstKeyword}건 → 
+                            AND 필터링 후: ${searchStats.finalResults}건
+                        </small>
+                        ` : ''}
+                    </div>`;
+
+                if (miniInfo) miniInfo.innerHTML = infoHTML;
+                if (fullInfo) fullInfo.innerHTML = infoHTML;
+            }
+
+            renderError(message) {
+                const errorHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        검색 중 오류가 발생했습니다: ${message}
+                    </div>`;
+
+                document.getElementById('knowledgeResults').innerHTML = errorHTML;
+                document.getElementById('knowledgeFullscreenResults').innerHTML = errorHTML;
+            }
+
+            showKnowledgeDetail(button) {
+                const question = button.dataset.question;
+                const answer = button.dataset.answer;
+
+                // 기존 모달 사용
+                const modal = new bootstrap.Modal(document.getElementById('detailedAnalysisModal'));
+
+                // 모달 제목 변경
+                document.getElementById('detailedAnalysisModalLabel').textContent = '지식 상세보기';
+
+                // 모달 내용 변경
+                const modalBody = document.querySelector('#detailedAnalysisModal .modal-body');
+                modalBody.innerHTML = `
+                    <div class="knowledge-detail-container">
+                        <div class="card border-success mb-3">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="mb-0">❓ 질문</h4>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text" style="font-size: 1.2rem; line-height: 1.6;">
+                                    ${question}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h4 class="mb-0">💡 답변</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="answer-content" style="font-size: 1.1rem; line-height: 1.7;">
+                                    ${this.formatAnswerText(answer)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                modal.show();
+            }
+
+            formatAnswerText(text) {
+                if (!text) return '';
+
+                return text
+                    .replace(/•/g, '<br>• ')
+                    .replace(/▪/g, '<br>▪ ')
+                    .replace(/\n/g, '<br>')
+                    .replace(/<br><br>/g, '<br>')
+                    .trim();
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text || '';
+                return div.innerHTML;
+            }
+
+            reloadData() {
+                if (this.lastQuery) {
+                    console.log('데이터 리로드:', this.lastQuery);
+                    this.performSearch(this.lastQuery);
+                } else {
+                    console.log('리로드할 쿼리가 없음');
+                }
+            }
+        }
+
+        // --- 지식 편집 시스템 ---
+        class KnowledgeEditor {
+            constructor(searchUI) {
+                this.searchUI = searchUI;
+                this.currentEditIndex = null;
+                this.similarityCheckTimeout = null;
+
+                this.initEvents();
+                this.initRealTimePreview();
+            }
+
+            initEvents() {
+                console.log('KnowledgeEditor initEvents 시작');
+
+                // 추가 버튼 (모달 내)
+                const addBtn = document.getElementById('addKnowledgeBtn');
+                console.log('addKnowledgeBtn 찾음:', !!addBtn);
+                addBtn?.addEventListener('click', () => {
+                    console.log('모달 내 추가 버튼 클릭');
+                    this.addNewItem();
+                });
+
+                // 저장 버튼
+                const saveBtn = document.getElementById('saveKnowledgeBtn');
+                console.log('saveKnowledgeBtn 찾음:', !!saveBtn);
+                saveBtn?.addEventListener('click', () => {
+                    console.log('저장 버튼 클릭');
+                    this.saveEdit();
+                });
+
+                // 삭제 버튼
+                const deleteBtn = document.getElementById('deleteKnowledgeBtn');
+                console.log('deleteKnowledgeBtn 찾음:', !!deleteBtn);
+                deleteBtn?.addEventListener('click', () => {
+                    console.log('삭제 버튼 클릭');
+                    this.deleteItem();
+                });
+
+                console.log('KnowledgeEditor initEvents 완료');
+            }
+
+            initRealTimePreview() {
+                // 실시간 미리보기
+                const editQuestion = document.getElementById('editQuestion');
+                const editAnswer = document.getElementById('editAnswer');
+
+                if (editQuestion && editAnswer) {
+                    editQuestion.addEventListener('input', () => this.updatePreview());
+                    editAnswer.addEventListener('input', () => this.updatePreview());
+                }
+
+                // 새 항목 추가 시 유사 체크
+                const newQuestion = document.getElementById('newQuestion');
+                if (newQuestion) {
+                    newQuestion.addEventListener('input', (e) => {
+                        this.checkSimilarQuestions(e.target.value);
+                    });
+                }
+            }
+
+            showAddModal() {
+                // 폼 초기화
+                document.getElementById('newQuestion').value = '';
+                document.getElementById('newAnswer').value = '';
+                document.getElementById('addSimilarWarning').style.display = 'none';
+                document.getElementById('forceAdd').checked = false;
+
+                // 모달 표시
+                const modal = new bootstrap.Modal(document.getElementById('knowledgeAddModal'));
+                modal.show();
+            }
+
+            showEditModal(index) {
+                console.log('showEditModal 호출, index:', index);
+                console.log('this.searchUI.currentResults:', this.searchUI.currentResults);
+                console.log('this.searchUI.currentResults length:', this.searchUI.currentResults?.length);
+
+                const item = this.searchUI.currentResults?.[index];
+                if (!item) {
+                    console.error('편집할 항목을 찾을 수 없음, index:', index);
+                    return;
+                }
+
+                console.log('편집할 항목:', item);
+                this.currentEditIndex = index;
+                this.currentEditId = item.id;
+
+                // 폼 채우기
+                document.getElementById('editQuestion').value = item.instruction || item.question || '';
+                document.getElementById('editAnswer').value = item.output || item.answer || '';
+                document.getElementById('deleteKnowledgeBtn').style.display = 'inline-block';
+
+                // 미리보기 업데이트
+                this.updatePreview();
+
+                // 유사 질문 체크
+                this.checkSimilarQuestions(item.instruction || item.question, index);
+
+                // 모달 표시
+                const modal = new bootstrap.Modal(document.getElementById('knowledgeEditModal'));
+                modal.show();
+            }
+
+            updatePreview() {
+                const question = document.getElementById('editQuestion').value;
+                const answer = document.getElementById('editAnswer').value;
+
+                document.getElementById('previewQuestion').innerHTML = this.formatText(question);
+                document.getElementById('previewAnswer').innerHTML = this.formatText(answer);
+            }
+
+            formatText(text) {
+                return text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/\n/g, '<br>');
+            }
+
+            async checkSimilarQuestions(question, excludeIndex = null) {
+                clearTimeout(this.similarityCheckTimeout);
+                this.similarityCheckTimeout = setTimeout(async () => {
+                    if (question.length < 3) {
+                        document.getElementById('similarWarning').style.display = 'none';
+                        document.getElementById('addSimilarWarning').style.display = 'none';
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/knowledge/check-similar', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ question, excludeId: excludeIndex })
+                        });
+
+                        const result = await response.json();
+                        this.showSimilarWarning(result.similar);
+
+                    } catch (error) {
+                        console.error('유사도 체크 실패:', error);
+                    }
+                }, 500);
+            }
+
+            showSimilarWarning(similar) {
+                const editWarning = document.getElementById('similarWarning');
+                const addWarning = document.getElementById('addSimilarWarning');
+                const editList = document.getElementById('similarList');
+                const addList = document.getElementById('addSimilarList');
+
+                if (similar && similar.length > 0) {
+                    const listHTML = similar.map(s =>
+                        `<li>${s.question} (${Math.round(s.similarity * 100)}% 유사)</li>`
+                    ).join('');
+
+                    if (editList) {
+                        editList.innerHTML = listHTML;
+                        editWarning.style.display = 'block';
+                    }
+
+                    if (addList) {
+                        addList.innerHTML = listHTML;
+                        addWarning.style.display = 'block';
+                    }
+                } else {
+                    if (editWarning) editWarning.style.display = 'none';
+                    if (addWarning) addWarning.style.display = 'none';
+                }
+            }
+
+            async saveEdit() {
+                const question = document.getElementById('editQuestion').value.trim();
+                const answer = document.getElementById('editAnswer').value.trim();
+
+                if (!question || !answer) {
+                    alert('질문과 답변을 모두 입력해주세요.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/knowledge/edit/${this.currentEditId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ question, answer })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('지식이 성공적으로 수정되었습니다.');
+                        // 모달 닫기 (Bootstrap 4 호환)
+                        const modalElement = document.getElementById('knowledgeEditModal');
+                        const modal = new bootstrap.Modal(modalElement);
+                        modal.hide();
+                        this.searchUI.reloadData(); // 검색 결과 리로드
+                    } else {
+                        alert('수정 실패: ' + result.error);
+                    }
+
+                } catch (error) {
+                    console.error('수정 오류:', error);
+                    alert('수정 중 오류가 발생했습니다.');
+                }
+            }
+
+            async deleteItem() {
+                console.log('deleteItem 호출, currentEditIndex:', this.currentEditIndex, 'currentEditId:', this.currentEditId);
+
+                if (!confirm('정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                    return;
+                }
+
+                try {
+                    console.log('삭제 API 호출 시작');
+                    const response = await fetch(`/api/knowledge/delete/${this.currentEditId}`, {
+                        method: 'DELETE'
+                    });
+
+                    console.log('삭제 API 응답:', response.status);
+                    const result = await response.json();
+                    console.log('삭제 API 결과:', result);
+
+                    if (result.success) {
+                        alert('지식이 성공적으로 삭제되었습니다.');
+
+                        // 모달 닫기 (Bootstrap 4 호환)
+                        const modalElement = document.getElementById('knowledgeEditModal');
+                        const modal = new bootstrap.Modal(modalElement);
+                        modal.hide();
+
+                        // 검색 결과 리로드
+                        if (this.searchUI.reloadData) {
+                            this.searchUI.reloadData();
+                        } else {
+                            console.warn('reloadData 메서드가 없음, 수동 리로드 필요');
+                        }
+                    } else {
+                        alert('삭제 실패: ' + result.error);
+                    }
+                } catch (error) {
+                    console.error('삭제 오류:', error);
+                    alert('삭제 중 오류가 발생했습니다: ' + error.message);
+                }
+            }
+
+            async addNewItem() {
+                const question = document.getElementById('newQuestion').value.trim();
+                const answer = document.getElementById('newAnswer').value.trim();
+                const force = document.getElementById('forceAdd').checked;
+
+                if (!question || !answer) {
+                    alert('질문과 답변을 모두 입력해주세요.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/knowledge/add', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ question, answer, force })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('지식이 성공적으로 추가되었습니다.');
+                        // 모달 닫기 (Bootstrap 4 호환)
+                        const modalElement = document.getElementById('knowledgeAddModal');
+                        const modal = new bootstrap.Modal(modalElement);
+                        modal.hide();
+                        this.searchUI.reloadData(); // 검색 결과 리로드
+                    } else {
+                        if (result.code === 'SIMILAR_EXISTS') {
+                            this.showSimilarWarning(result.similar);
+                            alert('유사한 질문이 이미 존재합니다. 확인 후 다시 시도해주세요.');
+                        } else {
+                            alert('추가 실패: ' + result.error);
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('추가 오류:', error);
+                    alert('추가 중 오류가 발생했습니다.');
+                }
+            }
+        }
+
+        // --- AI 인사이트 시스템 ---
+        class KnowledgeBriefing {
+            constructor(searchUI, isFullscreen = false) {
+                this.searchUI = searchUI;
+                this.isFullscreen = isFullscreen;
+                this.isGenerating = false;
+                this.currentBriefing = null;
+
+                this.initEvents();
+            }
+
+            initEvents() {
+                // 일반 모드 버튼들
+                const generateBtn = document.getElementById('generateBriefingBtn');
+                const closeBtn = document.getElementById('closeBriefingBtn');
+
+                if (generateBtn) {
+                    generateBtn.addEventListener('click', () => {
+                        this.isFullscreen = false; // 일반 모드
+                        this.generateBriefing(false);
+                    }); // 수동 시작
+                }
+
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => this.hideBriefing());
+                }
+
+                // 전체화면 모드 버튼들 (초기화 시 존재하는 경우)
+                const generateBtnFullscreen = document.getElementById('generateBriefingBtnFullscreen');
+                const closeBtnFullscreen = document.getElementById('closeBriefingBtnFullscreen');
+
+                if (generateBtnFullscreen) {
+                    generateBtnFullscreen.addEventListener('click', () => {
+                        this.isFullscreen = true; // 전체화면 모드
+                        this.generateBriefing(false);
+                    }); // 수동 시작
+                }
+
+                if (closeBtnFullscreen) {
+                    closeBtnFullscreen.addEventListener('click', () => this.hideBriefing());
+                }
+            }
+
+            showBriefingOption(results = null) {
+                // 현재 모드 확인 (전체화면 모드인지)
+                const isFullscreenMode = document.getElementById('knowledgeFullscreen').style.display === 'flex';
+                this.isFullscreen = isFullscreenMode;
+
+                const sectionId = this.isFullscreen ? 'aiBriefingSectionFullscreen' : 'aiBriefingSection';
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.style.display = 'block';
+
+                    // 부드러운 표시
+                    section.style.opacity = '0';
+                    section.style.transform = 'translateY(-10px)';
+
+                    setTimeout(() => {
+                        section.style.transition = 'all 0.3s ease';
+                        section.style.opacity = '1';
+                        section.style.transform = 'translateY(0)';
+                    }, 50);
+                }
+            }
+
+            hideBriefing() {
+                const sectionId = this.isFullscreen ? 'aiBriefingSectionFullscreen' : 'aiBriefingSection';
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.style.display = 'none';
+                }
+            }
+
+            async generateBriefing(autoStart = false) {
+                console.log('generateBriefing() 호출됨, autoStart:', autoStart);
+                if (this.isGenerating) {
+                    console.log('이미 생성 중이므로 중단');
+                    return;
+                }
+
+                const btnId = this.isFullscreen ? 'generateBriefingBtnFullscreen' : 'generateBriefingBtn';
+                const contentId = this.isFullscreen ? 'briefingContentFullscreen' : 'briefingContent';
+                const btn = document.getElementById(btnId);
+                const content = document.getElementById(contentId);
+
+                // 상태 변경
+                this.isGenerating = true;
+
+                // 수동 생성 시에만 로딩 상태 설정 (자동 생성시는 이미 설정됨)
+                if (!autoStart) {
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...';
+                    }
+
+                    if (content) {
+                        content.innerHTML = `
+                            <div class="briefing-loading text-center p-4">
+                                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                    <span class="sr-only">생성 중...</span>
+                                </div>
+                                <h5 class="text-primary mb-2">🤖 AI 인사이트 생성 중</h5>
+                                <p class="text-muted">검색 결과를 분석하여 인사이트를 생성하고 있습니다...</p>
+                                <div class="progress mt-3" style="height: 6px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                                         role="progressbar" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                try {
+                    // 3분 타임아웃 설정
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분
+
+                    const response = await fetch('/api/knowledge/generate-briefing', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: this.searchUI.lastQuery,
+                            searchResults: this.searchUI.currentResults || []
+                        }),
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.displayBriefing(result);
+                        this.currentBriefing = result;
+                    } else {
+                        throw new Error(result.error || '인사이트 생성 실패');
+                    }
+
+                } catch (error) {
+                    console.error('인사이트 생성 오류:', error);
+
+                    // 타임아웃 에러 처리
+                    if (error.name === 'AbortError') {
+                        this.showBriefingError('응답 시간이 초과되었습니다 (3분). 잠시 후 다시 시도해주세요.');
+                    } else {
+                        this.showBriefingError(error.message);
+                    }
+                } finally {
+                    // 버튼 복원
+                    this.isGenerating = false;
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-brain"></i> 인사이트 생성';
+                }
+            }
+
+            displayBriefing(result) {
+                const contentId = this.isFullscreen ? 'briefingContentFullscreen' : 'briefingContent';
+                const content = document.getElementById(contentId);
+                const briefing = result.briefing || '';
+                const metadata = result.metadata || {};
+
+                content.innerHTML = `
+                    <div class="briefing-result">
+                        <div class="briefing-meta">
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> ${new Date().toLocaleTimeString()} 생성
+                                ${metadata.termsAnalyzed ? ` • ${metadata.termsAnalyzed}개 용어 분석` : ''}
+                                ${metadata.sourcesUsed ? ` • ${metadata.sourcesUsed}개 출처 종합` : ''}
+                            </small>
+                        </div>
+                        <div class="briefing-text">
+                            ${this.formatBriefingText(briefing)}
+                        </div>
+                        <div class="briefing-actions">
+                            <button class="btn btn-outline-primary btn-sm" onclick="navigator.clipboard.writeText('${briefing.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-copy"></i> 복사
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+                                <i class="fas fa-print"></i> 인쇄
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            formatBriefingText(text) {
+                return text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/\n/g, '<br>')
+                    .replace(/^/, '<p>')
+                    .replace(/$/, '</p>');
+            }
+
+            showBriefingError(message) {
+                const contentId = this.isFullscreen ? 'briefingContentFullscreen' : 'briefingContent';
+                const content = document.getElementById(contentId);
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        인사이트 생성에 실패했습니다: ${message}
+                        <br><small>잠시 후 다시 시도해주세요.</small>
+                    </div>
+                `;
+            }
+
+            showBriefingPanel() {
+                console.log('showBriefingPanel() 호출됨, isFullscreen:', this.isFullscreen);
+                const sectionId = this.isFullscreen ? 'aiBriefingSectionFullscreen' : 'aiBriefingSection';
+                const section = document.getElementById(sectionId);
+                console.log('section ID:', sectionId, '찾음:', !!section);
+                if (section) {
+                    section.style.display = 'block';
+                    // 부드러운 표시 애니메이션
+                    section.style.opacity = '0';
+                    section.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        section.style.transition = 'all 0.3s ease';
+                        section.style.opacity = '1';
+                        section.style.transform = 'translateY(0)';
+                        console.log('showBriefingPanel 애니메이션 적용됨');
+
+                        // 표시된 섹션으로 스크롤
+                        setTimeout(() => {
+                            section.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'nearest',
+                                inline: 'nearest'
+                            });
+                        }, 300);
+                    }, 10);
+                } else {
+                    console.error('aiBriefingSection 요소를 찾을 수 없음');
+                }
+            }
+
+            setLoadingState(message = 'AI 인사이트를 생성하고 있습니다...') {
+                console.log('setLoadingState() 호출됨, 메시지:', message, 'isFullscreen:', this.isFullscreen);
+                const contentId = this.isFullscreen ? 'briefingContentFullscreen' : 'briefingContent';
+                const btnId = this.isFullscreen ? 'generateBriefingBtnFullscreen' : 'generateBriefingBtn';
+                const content = document.getElementById(contentId);
+                const btn = document.getElementById(btnId);
+                console.log('content ID:', contentId, '찾음:', !!content);
+                console.log('btn ID:', btnId, '찾음:', !!btn);
+                console.log('generateBriefingBtn 찾음:', !!btn);
+
+                if (content) {
+                    content.innerHTML = `
+                        <div class="briefing-loading text-center p-4">
+                            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                <span class="sr-only">생성 중...</span>
+                            </div>
+                            <h5 class="text-primary mb-2">🤖 AI 인사이트 생성 중</h5>
+                            <p class="text-muted">${message}</p>
+                            <div class="progress mt-3" style="height: 6px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                                     role="progressbar" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...';
+                }
+            }
+        }
+
+        // --- 통합 지식 관리 시스템 ---
+        class EnhancedKnowledgeSystem {
+            constructor() {
+                this.searchUI = null;
+                this.editor = null;
+                this.briefing = null;
+
+                this.init();
+            }
+
+            init() {
+                console.log('EnhancedKnowledgeSystem init 시작');
+                // DOM이 이미 로드되었는지 확인
+                if (document.readyState === 'loading') {
+                    // 아직 로드 중이면 이벤트 대기
+                    document.addEventListener('DOMContentLoaded', () => {
+                        this.initializeSystem();
+                    });
+                } else {
+                    // 이미 로드되었으면 바로 초기화
+                    this.initializeSystem();
+                }
+            }
+
+            initializeSystem() {
+                console.log('DOMContentLoaded 이벤트 발생');
+                console.log('window.knowledgeSearchUI 존재:', !!window.knowledgeSearchUI);
+                if (window.knowledgeSearchUI) {
+                    this.searchUI = window.knowledgeSearchUI;
+                    console.log('KnowledgeEditor 초기화 시작');
+                    this.editor = new KnowledgeEditor(this.searchUI);
+                    console.log('KnowledgeEditor 초기화 완료:', !!this.editor);
+                    console.log('showEditModal 메서드 존재:', typeof this.editor?.showEditModal);
+
+                    console.log('KnowledgeBriefing 초기화 시작');
+                    this.briefing = new KnowledgeBriefing(this.searchUI);
+                    console.log('KnowledgeBriefing 초기화 완료:', !!this.briefing);
+
+                    // 검색 결과에 편집 버튼 추가
+                    console.log('편집 버튼 추가 시작 - 결과 수:', this.searchUI?.currentResults?.length || 0);
+                    this.enhanceSearchResults();
+
+                    // 고급 옵션 초기화
+                    this.initAdvancedOptions();
+
+                    console.log('지식 편집 시스템이 초기화되었습니다.');
+                } else {
+                    console.error('KnowledgeSearchUI가 초기화되지 않음');
+                }
+            }
+
+            initAdvancedOptions() {
+                // 미니 창 고급 옵션
+                const miniToggleBtn = document.getElementById('toggleAdvancedBtn');
+                const miniOptionsPanel = document.getElementById('advancedOptions');
+
+                if (miniToggleBtn && miniOptionsPanel) {
+                    miniToggleBtn.addEventListener('click', () => {
+                        const isVisible = miniOptionsPanel.style.display !== 'none';
+                        miniOptionsPanel.style.display = isVisible ? 'none' : 'block';
+                        miniToggleBtn.innerHTML = isVisible ?
+                            '<i class="fas fa-cog"></i> 고급 옵션' :
+                            '<i class="fas fa-cog"></i> 고급 옵션 닫기';
+                    });
+                }
+
+                // 전체화면 고급 옵션 (새로 추가)
+                const fullToggleBtn = document.getElementById('toggleAdvancedBtnFullscreen');
+                const fullOptionsPanel = document.getElementById('advancedOptionsFullscreen');
+
+                if (fullToggleBtn && fullOptionsPanel) {
+                    fullToggleBtn.addEventListener('click', () => {
+                        const isVisible = fullOptionsPanel.style.display !== 'none';
+                        fullOptionsPanel.style.display = isVisible ? 'none' : 'block';
+                        fullToggleBtn.innerHTML = isVisible ?
+                            '<i class="fas fa-cog"></i> 고급 옵션' :
+                            '<i class="fas fa-cog"></i> 고급 옵션 닫기';
+                    });
+                }
+
+                // 기본적으로 고급 옵션 표시
+                const miniContainer = document.querySelector('.knowledge-advanced-container');
+                const fullContainer = document.querySelector('.knowledge-fullscreen .knowledge-advanced-container');
+
+                if (miniContainer) miniContainer.style.display = 'block';
+                if (fullContainer) fullContainer.style.display = 'block';
+            }
+
+            enhanceSearchResults() {
+                console.log('enhanceSearchResults 함수 실행됨');
+
+                // 검색 완료 후 콜백 추가
+                const originalPerformSearch = this.searchUI.performSearch.bind(this.searchUI);
+                this.searchUI.performSearch = async (query) => {
+                    console.log('검색 시작:', query);
+                    await originalPerformSearch(query);
+                    console.log('검색 완료, 결과 수:', this.searchUI.currentResults?.length || 0);
+
+                    // 검색 결과가 있으면 AI 인사이트 옵션 표시
+                    if (this.searchUI.currentResults && this.searchUI.currentResults.length > 0) {
+                        console.log('AI 인사이트 옵션 표시');
+                        this.briefing.showBriefingOption(this.searchUI.currentResults);
+                    }
+
+                    // 검색 결과에 편집 버튼 추가
+                    setTimeout(() => {
+                        this.addEditButtonsToResults();
+                    }, 100);
+                };
+
+                // 이벤트 위임으로 편집/삭제 처리
+                const handleResultClick = (e) => {
+                    const resultItem = e.target.closest('.knowledge-result-item, .result-item');
+                    if (!resultItem) {
+                        console.log('결과 항목을 찾을 수 없음');
+                        return;
+                    }
+
+                    const index = parseInt(resultItem.dataset.index);
+                    console.log('결과 항목 클릭:', index, '타겟:', e.target.className);
+
+                    if (e.target.closest('.edit-btn')) {
+                        e.preventDefault();
+                        console.log('편집 버튼 클릭:', index);
+                        console.log('this.editor 존재:', !!this.editor);
+                        console.log('this.editor.showEditModal 존재:', typeof this.editor?.showEditModal);
+
+                        if (this.editor && this.editor.showEditModal) {
+                            try {
+                                this.editor.showEditModal(index);
+                                console.log('편집 모달 표시 성공');
+                            } catch (error) {
+                                console.error('편집 모달 표시 실패:', error);
+                            }
+                        } else {
+                            console.error('편집 에디터가 초기화되지 않음');
+                        }
+                    } else if (e.target.closest('.delete-btn')) {
+                        e.preventDefault();
+                        console.log('삭제 버튼 클릭:', index);
+
+                        // 삭제할 항목의 ID 가져오기
+                        const item = this.searchUI.currentResults?.[index];
+                        if (!item) {
+                            console.error('삭제할 항목을 찾을 수 없음, index:', index);
+                            return;
+                        }
+
+                        console.log('this.editor 존재:', !!this.editor);
+
+                        if (this.editor) {
+                            this.editor.currentEditId = item.id;
+                            console.log('currentEditId 설정됨:', this.editor.currentEditId);
+
+                            try {
+                                this.editor.deleteItem();
+                                console.log('삭제 함수 호출 성공');
+                            } catch (error) {
+                                console.error('삭제 함수 호출 실패:', error);
+                            }
+                        } else {
+                            console.error('편집 에디터가 초기화되지 않음');
+                        }
+                    }
+                };
+
+                document.getElementById('knowledgeResults')?.addEventListener('click', handleResultClick);
+                document.getElementById('knowledgeFullscreenResults')?.addEventListener('click', handleResultClick);
+            }
+
+            addEditButtonsToResults() {
+                console.log('addEditButtonsToResults 실행됨');
+                const resultItems = document.querySelectorAll('.knowledge-result-item, .result-item');
+                console.log('찾은 결과 항목 수:', resultItems.length);
+
+                resultItems.forEach((item, index) => {
+                    console.log(`항목 ${index} 처리 중:`, item);
+
+                    // 이미 버튼이 있는지 확인
+                    const existingActions = item.querySelector('.edit-actions');
+                    if (existingActions) {
+                        console.log(`항목 ${index}: 버튼 이미 존재`);
+                        return;
+                    }
+
+                    const actionsContainer = item.querySelector('.result-actions');
+                    console.log(`항목 ${index}의 actionsContainer:`, actionsContainer);
+
+                    if (actionsContainer) {
+                        const actions = document.createElement('div');
+                        actions.className = 'edit-actions mb-2';
+                        actions.style.cssText = `
+                            display: flex;
+                            gap: 8px;
+                            justify-content: flex-start;
+                            align-items: center;
+                        `;
+                        actions.innerHTML = `
+                            <button class="btn btn-sm btn-outline-primary edit-btn" title="편집">
+                                <i class="fas fa-edit"></i> 편집
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-btn" title="삭제">
+                                <i class="fas fa-trash"></i> 삭제
+                            </button>
+                        `;
+
+                        // 상세보기 버튼 앞에 삽입
+                        actionsContainer.insertBefore(actions, actionsContainer.firstChild);
+
+                        console.log(`항목 ${index}에 버튼 추가됨`);
+                    } else {
+                        console.warn(`항목 ${index}에 .result-actions를 찾을 수 없음`);
+                        console.log('항목 HTML:', item.innerHTML.substring(0, 200));
+                    }
+                });
+            }
+        }
+
+        // 시스템 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            window.knowledgeSearchUI = new KnowledgeSearchUI();
+            window.enhancedKnowledgeSystem = new EnhancedKnowledgeSystem();
+        });
+
+        // ==========================================
+        // 챗봇 기능
+        // ==========================================
+
+        // 네비게이션 바 챗봇 버튼 - 새 탭으로 챗봇 열기
+        document.getElementById('navChatbotBtn').addEventListener('click', function () {
+            window.open('http://localhost:5000', '_blank');
+        });
+
+        // 검색 실행
+        document.getElementById('executeSearchBtn').addEventListener('click', async function () {
+            const query = document.getElementById('knowledgeSearchInput').value.trim();
+
+            if (!query) {
+                alert('검색어를 입력하세요.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/knowledge/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, page: 1, limit: 50 })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data.results) {
+                    currentSearchResults = data.data.results;
+                    renderSearchResults(currentSearchResults);
+                    document.getElementById('searchResultsContainer').style.display = 'block';
+                    document.getElementById('totalResultsCount').textContent = currentSearchResults.length;
+                    document.getElementById('briefingResultContainer').style.display = 'none';
+                } else {
+                    alert('검색 결과가 없습니다.');
+                }
+            } catch (error) {
+                console.error('검색 오류:', error);
+                alert('검색 중 오류가 발생했습니다.');
+            }
+        });
+
+        // Enter 키로 검색
+        document.getElementById('knowledgeSearchInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                document.getElementById('executeSearchBtn').click();
+            }
+        });
+
+        // 검색 결과 렌더링
+        function renderSearchResults(results) {
+            const tbody = document.getElementById('searchResultsTableBody');
+            tbody.innerHTML = '';
+
+            results.forEach((result, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>
+                        <input type="checkbox" class="result-checkbox" data-id="${result.id}">
+                    </td>
+                    <td>${result.rank || index + 1}</td>
+                    <td>${result.highlighted_question || result.question}</td>
+                    <td>${result.highlighted_answer_preview || result.answer_preview}</td>
+                    <td>
+                        <span class="badge badge-primary">${(result.relevance_score || 0).toFixed(1)}</span>
+                    </td>
+                `;
+            });
+
+            // 체크박스 이벤트 리스너
+            document.querySelectorAll('.result-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedResults);
+            });
+
+            // 선택 초기화
+            selectedResultIds.clear();
+            updateSelectedResults();
+        }
+
+        // 선택 결과 업데이트
+        function updateSelectedResults() {
+            selectedResultIds.clear();
+
+            document.querySelectorAll('.result-checkbox:checked').forEach(checkbox => {
+                selectedResultIds.add(parseInt(checkbox.dataset.id));
+            });
+
+            document.getElementById('selectedResultsCount').textContent = selectedResultIds.size;
+            document.getElementById('generateBriefingBtn').disabled = selectedResultIds.size === 0;
+        }
+
+        // 전체 선택
+        document.getElementById('selectAllBtn').addEventListener('click', function () {
+            document.querySelectorAll('.result-checkbox').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            document.getElementById('selectAllCheckbox').checked = true;
+            updateSelectedResults();
+        });
+
+        // 선택 해제
+        document.getElementById('deselectAllBtn').addEventListener('click', function () {
+            document.querySelectorAll('.result-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            document.getElementById('selectAllCheckbox').checked = false;
+            updateSelectedResults();
+        });
+
+        // 헤더 체크박스로 전체 선택/해제
+        document.getElementById('selectAllCheckbox').addEventListener('change', function () {
+            const isChecked = this.checked;
+            document.querySelectorAll('.result-checkbox').forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            updateSelectedResults();
+        });
+
+        // LLM 종합 생성
+        document.getElementById('generateBriefingBtn').addEventListener('click', async function () {
+            if (selectedResultIds.size === 0) {
+                alert('종합할 항목을 선택하세요.');
+                return;
+            }
+
+            const selectedResults = currentSearchResults.filter(r => selectedResultIds.has(r.id));
+            const query = document.getElementById('knowledgeSearchInput').value.trim();
+
+            const briefingText = document.getElementById('briefingResultText');
+            briefingText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI가 선택된 내용을 종합하는 중...';
+            document.getElementById('briefingResultContainer').style.display = 'block';
+
+            try {
+                const response = await fetch('/api/knowledge/generate-briefing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query,
+                        searchResults: selectedResults,
+                        selectedIds: Array.from(selectedResultIds)
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    briefingText.textContent = data.briefing || '종합 결과를 생성할 수 없습니다.';
+                } else {
+                    briefingText.textContent = '오류: ' + (data.error || '알 수 없는 오류');
+                }
+            } catch (error) {
+                console.error('LLM 종합 오류:', error);
+                briefingText.textContent = '종합 중 오류가 발생했습니다: ' + error.message;
+            }
+        });
+        // 챗봇 열기 함수
+        async function openChatbot() {
+            try {
+                const statusResponse = await fetch('/api/chatbot/status');
+                const statusData = await statusResponse.json();
+
+                if (statusData.available) {
+                    document.getElementById('chatbotIframe').src = 'http://localhost:5000';
+                    $('#chatbotModal').modal('show');
+                    document.getElementById('chatbotStatus').innerHTML =
+                        '<i class="fas fa-circle text-success"></i> 챗봇 서버 연결됨';
+                } else {
+                    alert('챗봇 서버가 실행되지 않았습니다.\n\nrun_all.bat을 실행하여 모든 서비스를 시작하거나,\n챗봇 폴더의 "챗봇실행.bat"을 별도로 실행해주세요.');
+                }
+            } catch (error) {
+                console.error('챗봇 상태 확인 오류:', error);
+                alert('챗봇 서버 상태를 확인할 수 없습니다.');
+            }
+        }
+        // 챗봇 열기 버튼들
+        const openChatbotBtn = document.getElementById('openChatbotBtn');
+        const knowledgeChatbotBtn = document.getElementById('knowledgeChatbotBtn');
+
+        if (openChatbotBtn) {
+            openChatbotBtn.addEventListener('click', openChatbot);
+        }
+        if (knowledgeChatbotBtn) {
+            knowledgeChatbotBtn.addEventListener('click', openChatbot);
+        }
+
+
+        // 챗봇 모달이 닫힐 때 iframe 초기화
+        $('#chatbotModal').on('hidden.bs.modal', function () {
+            document.getElementById('chatbotIframe').src = '';
+        });
+    </script>
+</body>
+
+</html>
