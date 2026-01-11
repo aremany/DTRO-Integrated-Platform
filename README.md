@@ -97,13 +97,39 @@
 - **Ollama**: Local LLM (분석 및 챗봇)
 
 ### 2. Ollama 모델 설치
-```bash
-# 고성능 모델 (권장)
-ollama pull hf.co/unsloth/gemma-3n-E4B-it-GGUF:Q4_K_M
 
-# 또는 경량 모델
+#### 🎯 **옵션 A (최고 성능 - 전력계통 전문 파인튜닝 모델) ⭐ 강력 권장**
+**2026년 1월 11일 공개된 전력계통 장애 분석 전문 파인튜닝 모델입니다.**
+```bash
+ollama pull bluejude10/smoothie-qwen3-8b-dtro
+```
+- **특징**: 전력계통, 급전계통, 전차선로, 수배전설비 도메인 특화
+- **성능**: Gemma-3n 대비 우수한 장애 분석 정확도
+- **허깅페이스**: [bluejude10/Smoothie-Qwen3-8B-DTRO-Edition](https://huggingface.co/bluejude10/Smoothie-Qwen3-8B-DTRO-Edition)
+- **파인튜닝 + RAG 시너지**: 도메인 지식 내재화 + 실시간 컨텍스트 보강으로 최적의 분석 결과 제공
+
+> **⚠️ 중요: 모델 적용을 위한 코드 수정**
+> 모델 다운로드(Pull) 후, 반드시 `analysis_api.py` 파일을 열어 모델명을 수정해야 적용됩니다.
+> ```python
+> # analysis_api.py 내부
+> # 수정 전
+> model_name = "hf.co/unsloth/gemma-3n-E2B-it-GGUF:Q4_K_M"
+> 
+> # 수정 후 (파인튜닝 모델 적용 시)
+> model_name = "bluejude10/smoothie-qwen3-8b-dtro"
+> ```
+
+#### 옵션 B (범용 모델 - 고성능):
+```bash
+ollama pull hf.co/unsloth/gemma-3n-E4B-it-GGUF:Q4_K_M
+```
+
+#### 옵션 C (범용 모델 - 경량):
+```bash
 ollama pull hf.co/unsloth/gemma-3n-E2B-it-GGUF:Q4_K_M
 ```
+
+> **💡 Tip**: 전력계통 관련 장애 분석에는 **옵션 A (Smoothie-Qwen3-8B-DTRO)** 사용을 강력히 권장합니다. 다른 도메인에 적용 시에는 옵션 B 또는 C를 사용하세요.
 
 ### 3. 패키지 설치
 ```bash
@@ -233,7 +259,7 @@ node server.js
 - [ ] 클라우드 배포 지원
 - [ ] 모바일 앱 개발
 - [ ] 다국어 지원 (영어, 일본어)
-- [ ] 고성능 LLM 파인튜닝
+- [x] **고성능 LLM 파인튜닝** ✅ (2026-01-11 완료: [Smoothie-Qwen3-8B-DTRO-Edition](https://huggingface.co/bluejude10/Smoothie-Qwen3-8B-DTRO-Edition))
 
 ---
 
